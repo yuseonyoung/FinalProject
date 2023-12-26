@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- [[개정이력(Modification Information)]] -->
+<!-- 수정일 수정자 수정내용 -->
+<!-- ========== ====== ============== -->
+<!-- 2023. 11. 10.} 이수정 최초작성 -->
+<!-- Copyright (c) 2023 by DDIT All right reserved -->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:sec="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/security
+        http://www.springframework.org/schema/security/spring-security.xsd">
+
+
+	<bean id="passwordEncoder"
+		class="org.springframework.security.crypto.factory.PasswordEncoderFactories"
+		factory-method="createDelegatingPasswordEncoder" />
+
+	<sec:authentication-manager
+		id="authenticationManager">
+		<sec:authentication-provider
+			user-service-ref="empDAO">
+			<sec:password-encoder ref="passwordEncoder" />
+		</sec:authentication-provider>
+	</sec:authentication-manager>
+
+	<sec:http auto-config="true">
+		<sec:form-login login-page="/login"
+			login-processing-url="/login" username-parameter="empCd"
+			password-parameter="empPw"
+			authentication-success-handler-ref="customAuthenticationSuccessHandler"
+			authentication-failure-handler-ref="customAuthenticationFailureHandler" />
+
+		<sec:remember-me key="aimKey"
+			remember-me-parameter="remember-me" token-validity-seconds="604800" />
+		<sec:session-management>
+			<sec:concurrency-control max-sessions="1"
+				expired-url="/login/duplicate" />
+		</sec:session-management>
+		<sec:logout logout-url="/logout" logout-success-url="/" />
+		<sec:intercept-url pattern="/findpw"
+			access="permitAll" />
+		<sec:intercept-url pattern="/login"
+			access="permitAll" />
+		<sec:intercept-url pattern="/logout"
+			access="permitAll" />
+
+		<sec:intercept-url pattern="/empList/**"
+			method="GET" access="isAuthenticated()" />
+
+		<sec:intercept-url pattern="/defect/**" method="GET"
+			access="isAuthenticated()" />
+		<sec:intercept-url pattern="/defect/**"
+			method="POST" access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/defect/**" method="PUT"
+			access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/defect/**"
+			method="DELETE" access="hasAnyRole('ADMIN','FIELD')" />
+
+		<sec:intercept-url pattern="/actInven/**"
+			method="GET" access="isAuthenticated()" />
+		<sec:intercept-url pattern="/actInven/**"
+			method="POST" access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/actInven/**"
+			method="PUT" access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/actInven/**"
+			method="DELETE" access="hasAnyRole('ADMIN','FIELD')" />
+
+		<sec:intercept-url pattern="/invenAdjust/**"
+			method="GET" access="isAuthenticated()" />
+		<sec:intercept-url pattern="/invenAdjust/**"
+			method="POST" access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/invenAdjust/**"
+			method="PUT" access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/invenAdjust/**"
+			method="DELETE" access="hasAnyRole('ADMIN','FIELD')" />
+
+		<sec:intercept-url pattern="/quote/**" method="GET"
+			access="isAuthenticated()" />
+		<sec:intercept-url pattern="/quote/**" method="POST"
+			access="hasAnyRole('ADMIN','OFFICE')" />
+		<sec:intercept-url pattern="/quote/**" method="PUT"
+			access="hasAnyRole('ADMIN','OFFICE')" />
+		<sec:intercept-url pattern="/quote/**"
+			method="DELETE" access="hasAnyRole('ADMIN','OFFICE')" />
+
+		<sec:intercept-url pattern="/sale/**" method="GET"
+			access="isAuthenticated()" />
+		<sec:intercept-url pattern="/sale/**" method="POST"
+			access="hasAnyRole('ADMIN','OFFICE')" />
+		<sec:intercept-url pattern="/sale/**" method="PUT"
+			access="hasAnyRole('ADMIN','OFFICE')" />
+		<sec:intercept-url pattern="/sale/**"
+			method="DELETE" access="hasAnyRole('ADMIN','OFFICE')" />
+
+		<sec:intercept-url pattern="/rels/**" method="GET"
+			access="isAuthenticated()" />
+		<sec:intercept-url pattern="/rels/**" method="POST"
+			access="hasAnyRole('ADMIN','OFFICE')" />
+		<sec:intercept-url pattern="/rels/**" method="PUT"
+			access="hasAnyRole('ADMIN','OFFICE')" />
+		<sec:intercept-url pattern="/rels/**"
+			method="DELETE" access="hasAnyRole('ADMIN','OFFICE')" />
+
+		<sec:intercept-url pattern="/invenSituation/**"
+			method="GET" access="isAuthenticated()" />
+		<sec:intercept-url pattern="/invenSituation/**"
+			method="POST" access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/invenSituation/**"
+			method="PUT" access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/invenSituation/**"
+			method="DELETE" access="hasAnyRole('ADMIN','FIELD')" />
+
+		<sec:intercept-url pattern="/sector/**" method="GET"
+			access="isAuthenticated()" />
+		<sec:intercept-url pattern="/sector/**"
+			method="POST" access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/sector/**" method="PUT"
+			access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/sector/**"
+			method="DELETE" access="hasAnyRole('ADMIN','FIELD')" />
+
+		<sec:intercept-url pattern="/stor/**" method="GET"
+			access="isAuthenticated()" />
+		<sec:intercept-url pattern="/stor/**" method="POST"
+			access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/stor/**" method="PUT"
+			access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/stor/**"
+			method="DELETE" access="hasAnyRole('ADMIN','FIELD')" />
+
+		<sec:intercept-url pattern="/storInOut/**"
+			method="GET" access="isAuthenticated()" />
+		<sec:intercept-url pattern="/storInOut/**"
+			method="POST" access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/storInOut/**"
+			method="PUT" access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/storInOut/**"
+			method="DELETE" access="hasAnyRole('ADMIN','FIELD')" />
+
+		<sec:intercept-url pattern="/scheduledStock/**"
+			method="GET" access="isAuthenticated()" />
+		<sec:intercept-url pattern="/scheduledStock/**"
+			method="POST" access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/scheduledStock/**"
+			method="PUT" access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/scheduledStock/**"
+			method="DELETE" access="hasAnyRole('ADMIN','FIELD')" />
+
+		<sec:intercept-url pattern="/item/**" method="GET"
+			access="isAuthenticated()" />
+		<sec:intercept-url pattern="/item/**" method="POST"
+			access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/item/**" method="PUT"
+			access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/item/**"
+			method="DELETE" access="hasAnyRole('ADMIN','FIELD')" />
+
+		<sec:intercept-url pattern="/por/**" method="GET"
+			access="isAuthenticated()" />
+		<sec:intercept-url pattern="/por/**" method="POST"
+			access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/por/**" method="PUT"
+			access="hasAnyRole('ADMIN','FIELD')" />
+		<sec:intercept-url pattern="/por/**" method="DELETE"
+			access="hasAnyRole('ADMIN','FIELD')" />
+
+		<sec:intercept-url pattern="/orderPlay/**"
+			method="GET" access="isAuthenticated()" />
+		<sec:intercept-url pattern="/orderPlay/**"
+			method="POST" access="hasAnyRole('ADMIN','OFFICE')" />
+		<sec:intercept-url pattern="/orderPlay/**"
+			method="PUT" access="hasAnyRole('ADMIN','OFFICE')" />
+		<sec:intercept-url pattern="/orderPlay/**"
+			method="DELETE" access="hasAnyRole('ADMIN','OFFICE')" />
+
+		<sec:intercept-url pattern="/orderBuy/**"
+			method="GET" access="isAuthenticated()" />
+		<sec:intercept-url pattern="/orderBuy/**"
+			method="POST" access="hasAnyRole('ADMIN','OFFICE')" />
+		<sec:intercept-url pattern="/orderBuy/**"
+			method="PUT" access="hasAnyRole('ADMIN','OFFICE')" />
+		<sec:intercept-url pattern="/orderBuy/**"
+			method="DELETE" access="hasAnyRole('ADMIN','OFFICE')" />
+
+		<sec:intercept-url pattern="/orderPlan/**"
+			method="GET" access="isAuthenticated()" />
+		<sec:intercept-url pattern="/orderPlan/**"
+			method="POST" access="hasAnyRole('ADMIN','OFFICE')" />
+		<sec:intercept-url pattern="/orderPlan/**"
+			method="PUT" access="hasAnyRole('ADMIN','OFFICE')" />
+		<sec:intercept-url pattern="/orderPlan/**"
+			method="DELETE" access="hasAnyRole('ADMIN','OFFICE')" />
+
+		<sec:intercept-url pattern="/orderUnitPrice/**"
+			method="GET" access="isAuthenticated()" />
+		<sec:intercept-url pattern="/orderUnitPrice/**"
+			method="POST" access="hasAnyRole('ADMIN','OFFICE')" />
+		<sec:intercept-url pattern="/orderUnitPrice/**"
+			method="PUT" access="hasAnyRole('ADMIN','OFFICE')" />
+		<sec:intercept-url pattern="/orderUnitPrice/**"
+			method="DELETE" access="hasAnyRole('ADMIN','OFFICE')" />
+
+
+		<sec:intercept-url pattern="/empInfo/personnel/**"
+			access="hasRole('ADMIN')" />
+		<sec:intercept-url pattern="/emp/**"
+			access="hasRole('ADMIN')" />
+		<sec:intercept-url pattern="/account/**"
+			access="hasRole('ADMIN')" />
+
+
+		<sec:intercept-url pattern="/resources/**"
+			access="permitAll" />
+		<sec:intercept-url pattern="/**"
+			access="isAuthenticated()" />
+	
+
+	</sec:http>
+
+</beans>

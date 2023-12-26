@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.notice.dao.NoticeDAO">
+
+
+	<insert id="createPost">
+		INSERT INTO NOTICE(NTC_NO, NTC_TITLE, NTC_CONT, NTC_RDATE, NTC_HIT, NTC_NM)
+		VALUES(#{ntcNo},#{ntcTitle},to_char(sysdate,'yyyy-mm-dd'),0,#{ntcNm})
+	</insert>
+
+	<select id="detail">
+		SELECT NTC_NO, NTC_TITLE, NTC_CONT, NTC_RDATE, NTC_HIT, NTC_NM
+		FROM NOTICE
+		ORDER BY NTC_NO ASC
+
+	</select>
+
+	<!-- 공지사항 전체 행의 수 -->
+	<select id="total" parameterType="hashMap" resultType="int">
+		SELECT count(*)
+		FROM NOTICE N, EMP E
+		WHERE n.ntc_nm = e.emp_cd
+		AND n.NTC_TITLE LIKE '%' || #{keyword} || '%'
+		ORDER BY n.NTC_NO DESC
+	</select>
+
+	<!-- {"keyword":"개똥이","currentPage":"3"} 또는 {"keyword":"","currentPage":"1"} 
+		이거 검색 쿼리 -->
+	<select id="noticeList" parameterType="hashMap"
+		resultType="kr.or.ddit.notice.vo.NoticeVO">
+
+		WITH U AS(        
+		    SELECT ROW_NUMBER() OVER(ORDER BY T.RNUM1 DESC) RNUM, T.*
+		    FROM
+		    (
+		        SELECT ROW_NUMBER() OVER(ORDER BY n.NTC_NO ASC) RNUM1,
+		        n.NTC_NO, n.NTC_TITLE, n.NTC_CONT, n.NTC_RDATE, n.NTC_HIT, n.NTC_NM,
+		        e.emp_nm, e.emp_auth
+		        FROM NOTICE N, EMP E
+		        WHERE n.ntc_nm = e.emp_cd
+		        AND   n.NTC_TITLE LIKE '%' || #{keyword} || '%'
+		    ) T
+		) 
+		SELECT * FROM U
+		WHERE U.RNUM BETWEEN (#{currentPage}*10 - (10-1)) AND (#{currentPage}*10)
+		<!-- SELECT NTC_NO, NTC_TITLE, NTC_CONT, NTC_RDATE, NTC_HIT, NTC_NM FROM 
+			NOTICE WHERE 1 = 1 AND NTC_TITLE LIKE '%' || #{keyword} || '%' ORDER BY NTC_NO 
+			ASC -->
+	</select>
+
+	<resultMap type="kr.or.ddit.notice.vo.NoticeVO"
+		id="NoticeMap">
+		<result property="rnum" column="RNUM" />
+		<result property="ntcCont" column="NTC_CONT" />
+		<result property="ntcHit" column="NTC_HIT" />
+		<result property="ntcNm" column="NTC_NM" />
+		<result property="ntcNo" column="NTC_NO" />
+		<result property="ntcRdate" column="NTC_RDATE" />
+		<result property="ntcTitle" column="NTC_TITLE" />
+		<result property="empCd" column="EMP_CD" />
+		<result property="empNm" column="EMP_NM" />
+		<collection property="atchFileDetailVO"
+			resultMap="atchFileDetailMap"></collection>
+	</resultMap>
+
+	<resultMap type="AtchFileDetailVO"
+		id="atchFileDetailMap">
+		<result property="atchFileId" column="ATCH_FILE_ID" />
+		<result property="fileSn" column="FILE_SN" />
+		<result property="fileStreCours" column="FILE_STRE_COURS" />
+		<result property="streFileNm" column="STRE_FILE_NM" />
+		<result property="orignlFileNm" column="ORIGNL_FILE_NM" />
+		<result property="fileExtsn" column="FILE_EXTSN" />
+		<result property="fileCn" column="FILE_CN" />
+		<result property="fileSize" column="FILE_SIZE" />
+	</resultMap>
+
+	<select id="pageDetail"
+		parameterType="kr.or.ddit.notice.vo.NoticeVO" resultMap="NoticeMap">
+		SELECT A.NTC_NO,A.NTC_TITLE, A.NTC_CONT, A.NTC_RDATE, A.NTC_HIT,
+		A.NTC_NM,E.EMP_CD,E.EMP_NM
+		, B.ATCH_FILE_ID, B.FILE_SN, B.FILE_STRE_COURS, B.STRE_FILE_NM
+		, B.ORIGNL_FILE_NM, B.FILE_EXTSN, B.FILE_CN, FILE_SIZE
+		FROM NOTICE A, ATCH_FILE_DETAIL B, EMP E
+		where A.NTC_NM = E.EMP_CD AND A.NTC_NO = B.ATCH_FILE_ID(+)
+		AND A.ntc_no = #{ntcNo}
+	</select>
+
+	<select id="pageSelect">
+		SELECT NTC_NO, NTC_TITLE, NTC_CONT, NTC_RDATE, NTC_HIT, NTC_NM
+		FROM NOTICE
+		ORDER BY NTC_NO
+	</select>
+
+	<!-- 들어올땐 : NoticeVO(ntcNo=null, ntcTitle=asfd, ntcCont=<p>sdd</p>, ntcRdate=null, 
+		ntcHit=0, ntcNm=E201802180101) 나갈땐 : NoticeVO(ntcNo=NTC0000124, ntcTitle=asfd, 
+		ntcCont=<p>sdd</p>, ntcRdate=null, ntcHit=0, ntcNm=E201802180101) -->
+	<insert id="pageCreatePost"
+		parameterType="kr.or.ddit.notice.vo.NoticeVO">
+		<selectKey resultType="String" order="BEFORE"
+			keyProperty="ntcNo">
+			SELECT 'NTC' || TRIM(TO_CHAR((SUBSTR(MAX(NTC_NO),4)+1),'0000000')) FROM
+			NOTICE
+		</selectKey>
+
+		INSERT INTO NOTICE(NTC_NO, NTC_TITLE, NTC_CONT, NTC_RDATE, NTC_HIT,
+		NTC_NM)
+		VALUES(#{ntcNo},#{ntcTitle},#{ntcCont},to_char(sysdate,'yyyy-mm-dd'),0,#{ntcNm})
+	</insert>
+
+	<!-- NoticeVO(ntcNo=NTC0000127, ntcTitle=개똥이제목3, ntcCont= 개똥이내용3 , ntcRdate=null, 
+		ntcHit=0, ntcNm=E201802180101) -->
+	<update id="pageDetailUpdate">
+		UPDATE NOTICE
+		SET NTC_TITLE=#{ntcTitle},NTC_CONT=#{ntcCont}
+		WHERE NTC_NO = #{ntcNo}
+	</update>
+
+	<delete id="pageDetailDelete">
+		DELETE FROM NOTICE
+		WHERE NTC_NO = #{ntcNo}
+	</delete>
+
+	<update id="pageUpdateHit" parameterType="NoticeVO">
+		update NOTICE
+		set NTC_HIT = NTC_HIT + 1
+		where NTC_NO = #{ntcNo}
+
+	</update>
+
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

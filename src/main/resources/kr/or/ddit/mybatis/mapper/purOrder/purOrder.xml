@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.purOrderRequest.dao.PurOrderRequestDAO">
+	<select id="selectPurOrderList" resultType="java.util.Map">
+		SELECT
+			a.preq_cd, a.preq_date, a.preq_due_date, FN_GET_COMM_CD_NM(a.preq_stat) as
+			preq_stat, b.req_item_qty, b.req_note, b.item_cd, c.item_nm, d.emp_nm,
+			d.emp_cd
+		FROM
+			pur_ord_req a
+		JOIN
+			req_item b on a.preq_cd=b.preq_cd
+		JOIN
+			item c on b.item_cd=c.item_cd
+		JOIN
+			emp d on a.emp_cd=d.emp_cd
+		WHERE
+        	a.preq_date BETWEEN ADD_MONTHS(TRUNC(SYSDATE), -3) AND TRUNC(SYSDATE)
+        order by a.preq_date desc	
+	</select>
+
+	<select id="selectPurOrder" resultType="java.util.Map">
+		SELECT
+			a.preq_cd, a.preq_date, a.preq_due_date, a.preq_stat, b.req_item_qty,
+			b.req_note, b.item_cd, c.item_nm, d.emp_nm, d.emp_cd
+		FROM
+			pur_ord_req a
+		JOIN
+			req_item b on a.preq_cd=b.preq_cd
+		JOIN
+			item c on b.item_cd=c.item_cd
+		JOIN
+			emp d on a.emp_cd=d.emp_cd
+		WHERE
+			b.preq_cd = #{preqCd}
+	</select>
+
+	<update id="updatePurOrdReq" parameterType="PurOrderRequestVO">
+		UPDATE
+			pur_ord_req
+		SET
+			PREQ_DATE = #{preqDate},
+			PREQ_DUE_DATE = TO_CHAR(#{preqDueDate},'YYYY-MM-DD'),
+			EMP_CD = #{empCd}
+		WHERE
+			PREQ_CD = #{preqCd}
+	</update>
+
+	<update id="updateReqItem" parameterType="ReqItemVO">
+		MERGE INTO
+			req_item
+		USING DUAL
+		ON
+			(trim(item_cd) = #{itemCd} AND trim(preq_cd) = #{preqCd})
+		WHEN MATCHED THEN 
+		UPDATE SET 
+			REQ_ITEM_QTY = #{reqItemQty},
+			REQ_NOTE = #{reqNote}
+		WHEN NOT MATCHED THEN 
+	    INSERT 
+	    	(preq_cd, item_cd, req_item_qty, req_note)
+	    VALUES 
+	    	(#{preqCd}, #{itemCd}, #{reqItemQty}, #{reqNote})
+	</update>
+
+	<delete id="deletePurOrdReq" parameterType="String">
+		DELETE FROM
+			pur_ord_req
+		WHERE
+			PREQ_CD = #{preqCd}
+	</delete>
+
+	<delete id="deleteReqItem" parameterType="String">
+		DELETE FROM
+			req_item
+		WHERE
+			PREQ_CD = #{preqCd}
+	</delete>
+
+	<insert id="insertPurOrdReq" parameterType="PurOrderRequestVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="preqCd">
+		   	SELECT 
+		   		'POR'||LPAD(NVL(MAX(TO_NUMBER(SUBSTR(preq_cd, 4, 6))),0)+1,3,0)
+           	FROM 
+           		pur_ord_req
+		</selectKey>
+			INSERT INTO
+				pur_ord_req (preq_cd, preq_date, preq_due_date, preq_stat, emp_cd)
+			VALUES
+				(#{preqCd}, TO_CHAR(SYSDATE, 'YYYY-MM-DD'), TO_CHAR(#{preqDueDate},'YYYY-MM-DD'), #{preqStat}, #{empCd})
+	</insert>
+
+	<insert id="insertReqItem" parameterType="ReqItemVO">
+		INSERT INTO
+			req_item (preq_cd, item_cd, req_item_qty, req_note)
+		VALUES
+			(#{preqCd}, #{itemCd}, #{reqItemQty}, #{reqNote})
+	</insert>
+
+	<select id="selectPreqCd" resultType="String">
+		SELECT 
+			b.preq_cd 
+		FROM
+			(SELECT 
+				rownum rnum ,a.preq_cd 
+			FROM 
+				(SELECT preq_cd from pur_ord_req) a order by a.preq_cd desc) b
+		WHERE b.rnum = 1
+	</select>
+	
+	
+	
+	<sql id="whereFrag">
+		<trim prefix="WHERE" prefixOverrides="AND">
+	        <if test="empCd != null and empCd != ''">
+	            AND a.emp_cd = #{empCd}
+	        </if>
+	        <if test="itemList.size() > 0">
+	            AND (
+	                <foreach collection="itemList" item="item" separator=" OR ">
+	                    <if test="item != null">
+	                        b.item_cd = #{item.itemCd}
+	                    </if>
+	                </foreach>
+	            )
+	        </if>
+	        <if test="preqSdate != null and preqSdate != '' and preqLdate != null and preqLdate != ''">
+	            and a.preq_date BETWEEN #{preqSdate} and #{preqLdate}
+	        </if>
+	        <if test="preqStat !=null and preqStat !=''">
+	        	and a.preq_stat = #{preqStat} 
+	        </if>
+		</trim>
+	</sql>
+	
+	
+	
+	<select id="whereSelectPurOrderList" resultType="java.util.Map" parameterType="java.util.Map">
+		SELECT
+		    a.preq_cd, a.preq_date, a.preq_due_date, FN_GET_COMM_CD_NM(a.preq_stat) as
+		    preq_stat, b.req_item_qty, b.req_note, b.item_cd, c.item_nm, d.emp_nm,
+		    d.emp_cd
+		FROM
+		    pur_ord_req a
+		JOIN
+		    req_item b on a.preq_cd=b.preq_cd
+		JOIN
+		    item c on b.item_cd=c.item_cd
+		JOIN
+		    emp d on a.emp_cd=d.emp_cd
+		<include refid="whereFrag"/>
+		order by preq_date desc    
+	</select>
+	
+	<!-- 신범종 페이징 -->
+	<!-- 발주요청서 리스트 뽑기 -->
+	<resultMap type="kr.or.ddit.purOrderRequest.vo.PurOrderRequestVO" id="orderPlanEnrollMap" autoMapping="true">
+		<id property="preqCd" column="PREQ_CD" /> 
+		<collection property="reqItem" ofType="kr.or.ddit.purOrderRequest.vo.ReqItemVO" autoMapping="true">
+				<association property="item" javaType="kr.or.ddit.item.vo.ItemVO" autoMapping="true"/>
+		</collection>
+	</resultMap>
+	<sql id="searchFrag">
+        <where>
+            <if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+                <choose>
+                    <when test="simpleCondition.searchType eq 'preqCd'">
+                        INSTR(por.preq_cd, #{simpleCondition.searchWord}) > 0
+                    </when>
+                    <when test="simpleCondition.searchType eq 'itemNm'">
+                        INSTR(item.item_nm, #{simpleCondition.searchWord}) > 0
+                    </when>
+                    <otherwise>
+                        INSTR(por.preq_cd, #{simpleCondition.searchWord}) > 0
+                        OR
+                        INSTR(item.item_nm, #{simpleCondition.searchWord}) > 0
+                    </otherwise>
+                </choose>
+            </if>
+        </where>
+    </sql>
+	
+	
+	<select id="selectTotalRecord" parameterType="kr.or.ddit.paging.vo.PaginationInfo" resultType="int">
+         	
+       	  SELECT COUNT(*)
+		  FROM(
+		          
+		    SELECT preq_cd_alias
+		      FROM (
+		        SELECT por.preq_cd AS preq_cd_alias, item.*
+		        from pur_ord_req por
+		  
+		  left outer join req_item ri
+		               on por.preq_cd=ri.preq_cd
+		               
+		  left outer join item item
+		               on ri.item_cd = item.item_cd
+       					<include refid="searchFrag" />
+		         
+		        )
+		group by preq_cd_alias
+		)				
+    </select>
+    
+    <select id="selectOrderPlanList2" parameterType="kr.or.ddit.paging.vo.PaginationInfo" resultMap="orderPlanEnrollMap">
+    	     
+        SELECT UR.*
+			FROM (
+			    SELECT A.*, ROWNUM AS rnum
+			    FROM (
+			       select 
+						por.preq_cd, 
+						por.preq_date, 
+						por.preq_due_date, 
+						(select count(*) from req_item where req_item.preq_cd= por.preq_cd)-1 nQty, 
+						MIN(item.item_nm) AS "item.item_nm", 
+						FN_GET_COMM_CD_NM(por.preq_stat) "PREQ_STAT"
+				
+				  from pur_ord_req por
+				  
+				  left outer join req_item ri
+				               on por.preq_cd=ri.preq_cd
+				               
+				  left outer join item item
+				               on ri.item_cd = item.item_cd
+		                   			<include refid="searchFrag" />
+		                   	GROUP BY
+				          por.preq_cd
+					      , por.preq_date
+					      , por.preq_due_date
+					      , por.preq_stat		
+		                    order by por.preq_date desc
+					    ) A
+			) UR
+			<![CDATA[ WHERE RNUM >= #{startRow} AND RNUM <= #{endRow} ]]>
+			ORDER BY UR.rnum            
+   
+				                       
+	</select>
+	
+	
+	
+	
+</mapper>

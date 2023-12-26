@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- [[개정이력(Modification Information)]] -->
+<!-- 수정일 수정자 수정내용 -->
+<!-- ========== ====== ============== -->
+<!-- 2023. 12. 08.} 이수정 최초작성 -->
+<!-- Copyright (c) 2023 by DDIT All right reserved -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.chart.dao.OfficeChartDAO">
+
+	<select id="officeChartBefore">
+		SELECT
+		FN_GET_COMM_CD_NM(stat_list.stat) AS status,
+		COUNT(FN_GET_COMM_CD_NM(pur_ord.pord_stat)) AS stat_count
+		FROM (
+		SELECT 'T001' AS stat FROM DUAL
+		UNION ALL
+		SELECT 'T002' AS stat FROM DUAL
+		UNION ALL
+		SELECT 'T003' AS stat FROM DUAL
+		UNION ALL
+		SELECT 'T004' AS stat FROM DUAL
+		) stat_list
+
+		LEFT JOIN pur_ord ON FN_GET_COMM_CD_NM(stat_list.stat) =
+		FN_GET_COMM_CD_NM(pur_ord.pord_stat)
+		AND SUBSTR(pur_ord.pord_date, 1, 4) = TO_CHAR(CURRENT_DATE, 'YYYY')
+		AND SUBSTR(pur_ord.pord_date, 6, 2) = TO_CHAR(CURRENT_DATE, 'MM')
+		WHERE FN_GET_COMM_CD_NM(stat_list.stat)='진행전'
+		GROUP BY FN_GET_COMM_CD_NM(stat_list.stat)
+	</select>
+
+	<select id="officeChartIng">
+		SELECT
+		FN_GET_COMM_CD_NM(stat_list.stat) AS status,
+		COUNT(FN_GET_COMM_CD_NM(pur_ord.pord_stat)) AS stat_count
+		FROM (
+		SELECT 'T001' AS stat FROM DUAL
+		UNION ALL
+		SELECT 'T002' AS stat FROM DUAL
+		UNION ALL
+		SELECT 'T003' AS stat FROM DUAL
+		UNION ALL
+		SELECT 'T004' AS stat FROM DUAL
+		) stat_list
+
+		LEFT JOIN pur_ord ON FN_GET_COMM_CD_NM(stat_list.stat) =
+		FN_GET_COMM_CD_NM(pur_ord.pord_stat)
+		AND SUBSTR(pur_ord.pord_date, 1, 4) = TO_CHAR(CURRENT_DATE, 'YYYY')
+		AND SUBSTR(pur_ord.pord_date, 6, 2) = TO_CHAR(CURRENT_DATE, 'MM')
+		WHERE FN_GET_COMM_CD_NM(stat_list.stat)='진행중'
+		GROUP BY FN_GET_COMM_CD_NM(stat_list.stat)
+	</select>
+
+	<select id="officeChartDone">
+		SELECT
+		FN_GET_COMM_CD_NM(stat_list.stat) AS status,
+		COUNT(FN_GET_COMM_CD_NM(pur_ord.pord_stat)) AS stat_count
+		FROM (
+		SELECT 'T001' AS stat FROM DUAL
+		UNION ALL
+		SELECT 'T002' AS stat FROM DUAL
+		UNION ALL
+		SELECT 'T003' AS stat FROM DUAL
+		UNION ALL
+		SELECT 'T004' AS stat FROM DUAL
+		) stat_list
+
+		LEFT JOIN pur_ord ON FN_GET_COMM_CD_NM(stat_list.stat) =
+		FN_GET_COMM_CD_NM(pur_ord.pord_stat)
+		AND SUBSTR(pur_ord.pord_date, 1, 4) = TO_CHAR(CURRENT_DATE, 'YYYY')
+		AND SUBSTR(pur_ord.pord_date, 6, 2) = TO_CHAR(CURRENT_DATE, 'MM')
+		WHERE FN_GET_COMM_CD_NM(stat_list.stat)='완료'
+		GROUP BY FN_GET_COMM_CD_NM(stat_list.stat)
+	</select>
+
+	<select id="officeChartBack">
+		SELECT
+		FN_GET_COMM_CD_NM(stat_list.stat) AS status,
+		COUNT(FN_GET_COMM_CD_NM(pur_ord.pord_stat)) AS stat_count
+		FROM (
+		SELECT 'T001' AS stat FROM DUAL
+		UNION ALL
+		SELECT 'T002' AS stat FROM DUAL
+		UNION ALL
+		SELECT 'T003' AS stat FROM DUAL
+		UNION ALL
+		SELECT 'T004' AS stat FROM DUAL
+		) stat_list
+
+		LEFT JOIN pur_ord ON FN_GET_COMM_CD_NM(stat_list.stat) =
+		FN_GET_COMM_CD_NM(pur_ord.pord_stat)
+		AND SUBSTR(pur_ord.pord_date, 1, 4) = TO_CHAR(CURRENT_DATE, 'YYYY')
+		AND SUBSTR(pur_ord.pord_date, 6, 2) = TO_CHAR(CURRENT_DATE, 'MM')
+		WHERE FN_GET_COMM_CD_NM(stat_list.stat)='반려'
+		GROUP BY FN_GET_COMM_CD_NM(stat_list.stat)
+	</select>
+
+</mapper>

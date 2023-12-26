@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.order.dao.OrderPlanDAO">
+	<!-- 발주요청서 리스트 뽑기 -->
+	<resultMap type="kr.or.ddit.purOrderRequest.vo.PurOrderRequestVO" id="orderPlanEnrollMap" autoMapping="true">
+		<id property="preqCd" column="PREQ_CD" /> 
+		<collection property="reqItem" ofType="kr.or.ddit.purOrderRequest.vo.ReqItemVO" autoMapping="true">
+				<association property="item" javaType="kr.or.ddit.item.vo.ItemVO" autoMapping="true"/>
+		</collection>
+	</resultMap>
+	<select id="selectOrderPlanEnrollList" parameterType="string" resultMap="orderPlanEnrollMap">
+		select 
+				por.preq_cd, 
+				por.preq_date, 
+				por.preq_due_date, 
+				(select count(*) from req_item where req_item.preq_cd= por.preq_cd)-1 nQty, 
+				it.item_nm, 
+				FN_GET_COMM_CD_NM(por.preq_stat) "PREQ_STAT"
+				
+		  from pur_ord_req por
+		  
+		  left outer join req_item ri
+		               on por.preq_cd=ri.preq_cd
+		               
+		  left outer join item it
+		               on ri.item_cd = it.item_cd
+	</select>
+	
+	<!-- 선택된 발주요청서코드의 정보 상세조회 -->
+	<!-- <resultMap type="kr.or.ddit.purOrderRequest.vo.PurOrderRequestVO" id="orderPlanEnrollOneMap" autoMapping="true">
+		<collection property="reqItem" ofType="kr.or.ddit.purOrderRequest.vo.ReqItemVO" autoMapping="true">
+				<association property="item" javaType="kr.or.ddit.item.vo.ItemVO" autoMapping="true">
+					<collection property="itemUprc" ofType="kr.or.ddit.order.vo.ItemUprcVO" autoMapping="true" />
+				</association>
+		</collection>
+	</resultMap> -->
+	
+	<select id="selectOrderPlanEnrollOne" parameterType="string" resultType="hashMap">
+		 select 
+				por.preq_cd "preqCd"
+                , por.preq_date "preqDate"
+                , por.preq_due_date "preqDueDate"
+                , FN_GET_COMM_CD_NM(por.preq_stat) "preqStat"
+                , emp.emp_nm "empNm"
+                , ri.item_cd "itemCd"
+                , ri.req_item_qty "reqItemQty"
+                , it.item_nm "itemNm"
+                , iu.uprc_edate "uprcEdate"
+		  from pur_ord_req por
+		  left outer join req_item ri
+		               on por.preq_cd=ri.preq_cd
+		  left outer join item it
+		               on ri.item_cd = it.item_cd
+          left outer join (
+						    SELECT 
+						        iu.item_cd,
+						        MAX(iu.uprc_edate) AS uprc_edate
+						    FROM item_uprc iu
+						    GROUP BY iu.item_cd
+						) iu 
+		 on it.item_cd = iu.item_cd
+		  left outer join emp emp
+                       on por.emp_cd = emp.emp_cd
+          where por.preq_cd=#{preqCd}
+	</select>
+	
+	<!-- 발주계획서 리스트 뽑기 -->
+	<resultMap type="kr.or.ddit.order.vo.OrderPlanVO" id="orderPlanMap" autoMapping="true">
+		<!-- <id property="pplanCd" column="PPLAN_CD" /> 이친구를 넣어주면 자동으로 사라지게한다. -->
+		<association property="purOrderRequeset" javaType="kr.or.ddit.purOrderRequest.vo.PurOrderRequestVO" autoMapping="true">
+			<collection property="reqItem" ofType="kr.or.ddit.purOrderRequest.vo.ReqItemVO" autoMapping="true">
+				<association property="item" javaType="kr.or.ddit.item.vo.ItemVO" autoMapping="true"/>
+			</collection>
+		</association>
+		<association property="emp" javaType="kr.or.ddit.employee.vo.EmpVO" autoMapping="true"/>
+	</resultMap>
+	<select id="selectOrderPlanList" parameterType="string" resultMap="orderPlanMap">
+		   select 
+                   pop.PPLAN_DATE,
+                   it.item_nm,
+                   ri.req_item_qty,
+                   emp.emp_nm,
+                   FN_GET_COMM_CD_NM(pop.pplan_stat) "PPLAN_STAT",
+                   ri.item_cd,
+                   pop.pplan_cd,
+                   pop.preq_cd,
+                   (select count(*) from req_item where req_item.preq_cd= por.preq_cd)-1 nQty
+             from  pur_ord_plan pop 
+	   left outer join pur_ord_req por
+	                on pop.preq_cd=por.preq_cd
+	   left outer join req_item ri
+	                on por.preq_cd=ri.preq_cd
+	   left outer join item it
+	                on ri.item_cd = it.item_cd
+	   left outer join emp emp
+	                on pop.emp_cd = emp.emp_cd
+	</select>
+	
+	<!-- 신규 발주계획서 등록 -->
+	<insert id="insertOrderPlan" parameterType="kr.or.ddit.order.vo.OrderPlanVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="pplanCd">
+			select 'POP'||LPAD((NVL(MAX(TO_NUMBER(SUBSTR(PPLAN_CD, 4, 3))), 0)+1),3,'0') 
+			  from PUR_ORD_PLAN
+		</selectKey>
+		INSERT INTO pur_ord_plan (
+					    pplan_cd,
+					    pplan_date,
+					    emp_cd,
+					    preq_cd
+			) VALUES (
+					    #{pplanCd},
+					    #{pplanDate},
+					    #{empCd},
+					    #{preqCd}
+			)
+	</insert>
+	
+	<!-- 신규 발주계획서 등록시 발주요청서에서 진행상태가 완료되는 update문 -->
+	<update id="updateOrderReq" parameterType="string">
+		UPDATE pur_ord_req
+		SET
+		    preq_stat = 'T002'
+		WHERE
+		        preq_cd = #{preqCd}
+	</update>
+	<!-- 신규 발주계획서 등록시 발주요청서에서 진행상태가 완료되는 update문 -->
+	<update id="updateOrderPlan" parameterType="string">
+		UPDATE pur_ord_plan
+		SET
+		    pplan_stat = 'T002'
+		WHERE
+		        pplan_cd = #{pplanCd}
+	</update>
+	
+	<!-- 발주계획서 하나의 상세페이지 및 전체 -->
+	<select id="selectOrderPlanListOne" parameterType="string" resultType="hashMap">
+		SELECT 
+		    pop.pplan_date AS "pplanDate",
+		    pop.pplan_stat AS "pplanStat",
+		    pop.pplan_cd AS "pplanCd",
+		    emp.emp_nm AS "empNm",
+		    ri.req_item_qty AS "reqItemQty",
+		    item.item_nm AS "itemNm",
+		    item.item_cd AS "itemCd",
+		    iu.in_uprc AS "inUprc",
+		    cq.com_cd as "comCd",
+            com.com_nm as "comNm",
+		    <![CDATA[(CASE WHEN NVL(iu.uprc_edate, SYSDATE - 1) < SYSDATE THEN 'Y' ELSE 'N' END) AS "expired"]]>
+		FROM pur_ord_plan pop
+		LEFT OUTER JOIN pur_ord_req por ON pop.preq_cd = por.preq_cd
+		LEFT OUTER JOIN req_item ri ON por.preq_cd = ri.preq_cd
+		LEFT OUTER JOIN item item ON ri.item_cd = item.item_cd
+		LEFT OUTER JOIN emp emp ON pop.emp_cd = emp.emp_cd
+		LEFT OUTER JOIN (
+		    SELECT 
+		        iu.item_cd, 
+		        MAX(iu.uprc_edate) AS uprc_edate
+                
+		    FROM item_uprc iu
+            
+		    GROUP BY iu.item_cd
+            
+		) max_iu ON ri.item_cd = max_iu.item_cd
+        LEFT OUTER JOIN item_uprc iu ON max_iu.item_cd = iu.item_cd AND max_iu.uprc_edate = iu.uprc_edate
+        LEFT OUTER JOIN com_qte cq ON iu.cqte_cd = cq.cqte_cd
+        left outer join com com on cq.com_cd = com.com_cd
+		WHERE pop.pplan_cd = #{pplanCd}
+	</select>
+	
+	<!-- 발주계획서 하나의 상세페이지 및 단가요청 -->
+	<select id="selectOrderPlanListOneUnitPrice" parameterType="string" resultType="hashMap">
+		SELECT 
+		    pop.pplan_date AS "pplanDate",
+		    pop.pplan_stat AS "pplanStat",
+		    pop.pplan_cd AS "pplanCd",
+		    emp.emp_nm AS "empNm",
+		    ri.req_item_qty AS "reqItemQty",
+		    item.item_nm AS "itemNm",
+		    item.item_cd AS "itemCd",
+		    <![CDATA[(CASE WHEN NVL(iu.uprc_edate, SYSDATE - 1) < SYSDATE THEN 'Y' ELSE 'N' END) AS "expired"]]>
+		FROM pur_ord_plan pop
+		LEFT OUTER JOIN pur_ord_req por ON pop.preq_cd = por.preq_cd
+		LEFT OUTER JOIN req_item ri ON por.preq_cd = ri.preq_cd
+		LEFT OUTER JOIN item item ON ri.item_cd = item.item_cd
+		LEFT OUTER JOIN emp emp ON pop.emp_cd = emp.emp_cd
+		LEFT OUTER JOIN (
+		    SELECT 
+		        iu.item_cd,
+		        MAX(iu.uprc_edate) AS uprc_edate
+		    FROM item_uprc iu
+		    GROUP BY iu.item_cd
+		) iu ON ri.item_cd = iu.item_cd
+		
+		WHERE pop.pplan_cd = #{pplanCd} and  <![CDATA[ (iu.uprc_edate < SYSDATE OR iu.uprc_edate IS NULL) ]]>
+	</select>
+	
+	<!-- 발주계획서 하나의 상세페이지 및 발주 -->
+	<select id="selectOrderPlanListOneOrderPlan" parameterType="string" resultType="hashMap">
+		SELECT 
+		    pop.pplan_date AS "pplanDate",
+		    pop.pplan_stat AS "pplanStat",
+		    pop.pplan_cd AS "pplanCd",
+		    emp.emp_nm AS "empNm",
+		    ri.req_item_qty AS "reqItemQty",
+		    item.item_nm AS "itemNm",
+		    item.item_cd AS "itemCd",
+            cq.com_cd as "comCd",
+            com.com_nm as "comNm",
+            iu.in_uprc as "inUprc",
+		   <![CDATA[ (CASE WHEN NVL(iu.uprc_edate, SYSDATE - 1) < SYSDATE THEN 'Y' ELSE 'N' END) AS "expired"]]>
+		FROM pur_ord_plan pop
+		LEFT OUTER JOIN pur_ord_req por ON pop.preq_cd = por.preq_cd
+		LEFT OUTER JOIN req_item ri ON por.preq_cd = ri.preq_cd
+		LEFT OUTER JOIN item item ON ri.item_cd = item.item_cd
+		LEFT OUTER JOIN emp emp ON pop.emp_cd = emp.emp_cd
+		LEFT OUTER JOIN (
+		    SELECT 
+		        iu.item_cd, iu.cqte_cd, iu.in_uprc,
+		        MAX(iu.uprc_edate) AS uprc_edate
+		    FROM item_uprc iu
+		    GROUP BY iu.item_cd , iu.cqte_cd, iu.in_uprc
+		) iu ON ri.item_cd = iu.item_cd
+        LEFT OUTER JOIN com_qte cq ON iu.cqte_cd = cq.cqte_cd
+        left outer join com com on cq.com_cd = com.com_cd
+                    where pplan_cd=#{pplanCd} and  <![CDATA[ iu.uprc_edate>sysdate ]]>
+	</select>
+	
+	
+	
+	<sql id="searchFrag">
+        <where>
+            <if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+                <choose>
+                    <when test="simpleCondition.searchType eq 'pplanCd'">
+                        INSTR(pop.pplan_cd, #{simpleCondition.searchWord}) > 0
+                    </when>
+                    <when test="simpleCondition.searchType eq 'itemNm'">
+                        INSTR(item.item_nm, #{simpleCondition.searchWord}) > 0
+                    </when>
+                    <when test="simpleCondition.searchType eq 'empNm'">
+                        INSTR(emp.emp_nm, #{simpleCondition.searchWord}) > 0
+                    </when>
+                    <otherwise>
+                        INSTR(pop.pplan_cd, #{simpleCondition.searchWord}) > 0
+                        OR
+                        INSTR(item.item_nm, #{simpleCondition.searchWord}) > 0
+                        OR
+                        INSTR(emp.emp_nm, #{simpleCondition.searchWord}) > 0
+                    </otherwise>
+                </choose>
+            </if>
+        </where>
+    </sql>
+    <select id="selectTotalRecord" parameterType="kr.or.ddit.paging.vo.PaginationInfo" resultType="int">
+         select 
+               count(*) 
+           from 
+               pur_ord_plan pop 
+               
+           left outer join pur_ord_req por
+        				on pop.preq_cd=por.preq_cd 
+        
+           left outer join req_item ri
+       					on por.preq_cd=ri.preq_cd
+       		left outer join item item
+			                on ri.item_cd = item.item_cd
+            left outer join emp emp
+			                on pop.emp_cd = emp.emp_cd
+       					<include refid="searchFrag" />
+    </select>
+    <select id="selectOrderPlanList2" parameterType="kr.or.ddit.paging.vo.PaginationInfo" resultMap="orderPlanMap">
+    	     
+        SELECT UR.*
+			FROM (
+			    SELECT A.*, ROWNUM AS rnum
+			    FROM (
+			       select 
+                   pop.PPLAN_DATE,
+                   item.item_nm,
+                   ri.req_item_qty,
+                   emp.emp_nm,
+                   FN_GET_COMM_CD_NM(pop.pplan_stat) "PPLAN_STAT",
+                   ri.item_cd,
+                   pop.pplan_cd,
+                   pop.preq_cd,
+                   (select count(*) from req_item where req_item.preq_cd= por.preq_cd)-1 nQty
+             from  pur_ord_plan pop
+			   left outer join pur_ord_req por
+			                on pop.preq_cd=por.preq_cd
+			   left outer join req_item ri
+			                on por.preq_cd=ri.preq_cd
+			   left outer join item item
+			                on ri.item_cd = item.item_cd
+			   left outer join emp emp
+			                on pop.emp_cd = emp.emp_cd
+		                   <include refid="searchFrag" />
+		                    order by pop.pplan_date desc
+					    ) A
+			) UR
+			<![CDATA[ WHERE RNUM >= #{startRow} AND RNUM <= #{endRow} ]]>
+			ORDER BY UR.rnum            
+   
+				                       
+	</select>
+	
+</mapper>

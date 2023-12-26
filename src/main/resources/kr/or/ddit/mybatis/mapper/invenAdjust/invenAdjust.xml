@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.invenAdjust.dao.InvenAdjustDAO">
+
+	<resultMap type="kr.or.ddit.actInven.vo.ActInvenVO" id="invenAdjustMap" autoMapping="true">
+		<association property="storage" autoMapping="true"/>
+		<association property="item" autoMapping="true"/>
+		<association property="emp" autoMapping="true"/>
+		<collection property="actIvenItem" ofType="kr.or.ddit.actInven.vo.ActInvenItemVO" autoMapping="true">
+			<association property="item" autoMapping="true"/>
+			<association property="itemWare" autoMapping="true"/>
+		</collection>
+	</resultMap>
+	
+	<sql id="searchFrag">
+		    <trim prefix="WHERE" prefixOverrides="AND">
+		        <choose>
+				    <when test="detailCondition.searchType != null and @org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.searchType)">
+				        <if test="detailCondition.searchType == 'wareNm'">
+				            AND  W.WARE_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				        </if>
+				        <if test="detailCondition.searchType == 'itemNm'">
+				            AND I.ITEM_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				        </if>
+				        <if test="detailCondition.searchType == 'empNm'">
+				            AND  E.EMP_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				        </if>
+				    </when>
+				    <otherwise>
+				        	 W.WARE_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				        	 OR
+				        	 I.ITEM_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				        	 OR
+				        	 E.EMP_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				    </otherwise>
+				</choose>
+		 </trim>
+	</sql>
+	
+	<select id="selectInvenAdjustList" resultMap="invenAdjustMap">
+		
+		  SELECT A.*
+          FROM(
+			SELECT
+				RI.REAL_CD
+				, I.ITEM_CD
+				, I.ITEM_NM
+				, W.WARE_NM
+				, W.WARE_CD
+				, RI.SEC_CD
+				, E.EMP_NM
+				, IW.WARE_QTY
+				, RII.RINV_QTY
+				, (RII.RINV_QTY-IW.WARE_QTY) AS ERROR_QTY
+				, RII.ITEM_NUM
+				, RI.RINV_DATE
+			FROM
+				REAL_INV RI
+			JOIN
+				REAL_INV_ITEM RII ON(RI.REAL_CD = RII.REAL_CD)
+			JOIN
+				WARE W ON(RI.WARE_CD = W.WARE_CD)
+			JOIN
+				ITEM I ON(RII.ITEM_CD = I.ITEM_CD)
+			JOIN
+				EMP E ON(E.EMP_CD = RI.EMP_CD)
+			JOIN
+				ITEM_WARE IW ON(RII.ITEM_CD = IW.ITEM_CD AND RI.SEC_CD = IW.SEC_CD2)
+			<include refid="searchFrag" />
+			ORDER BY
+				RI.REAL_CD DESC, RII.ITEM_NUM ASC
+		)A
+        WHERE A.ERROR_QTY !=0
+	</select>
+	
+	<insert id="insertInvenAdjust" parameterType="kr.or.ddit.actInven.vo.ActInvenVO">
+	<selectKey order="BEFORE" resultType="String" keyProperty="errAdjCd">
+			SELECT
+				TO_CHAR(SYSDATE,'YYYY-MM-DD')
+				||'-'
+				|| TO_CHAR(NVL(MAX(TO_NUMBER(SUBSTR(ERR_ADJ_CD,12,2))),0)+1,'FM00')
+			FROM
+				ERR_ADJ
+			WHERE
+				ERR_ADJ_CD LIKE SYSDATE||'%'
+		</selectKey>
+		INSERT INTO ERR_ADJ (
+		    ERR_ADJ_CD,
+		    ERR_YN,
+		    ERR_ADJ_QTY,
+		    REAL_CD,
+		    ITEM_CD,
+		    ERR_DATE
+		) VALUES (
+		   #{errAdjCd}
+		   ,'Y'
+		   ,#{errorQty}
+		   ,#{realCd}
+		   ,#{itemCd}
+		   ,#{rinvDate}
+		)
+	</insert>
+	
+	<!-- 창고 품목수량 업데이트 -->
+	
+	
+	<!-- 아이템 품목수량 업데이트 -->
+	
+	
+	
+	<!-- 재고 아이템 뽑기 -->
+
+	<resultMap type="kr.or.ddit.storage.vo.ItemWareVO" id="itemInvenAll" autoMapping="true">
+		<association property="itemVO" autoMapping="true"/>
+	</resultMap>
+
+	<sql id="itemSearchFrag">
+		    <trim prefix="WHERE" prefixOverrides="AND">
+		        <choose>
+				    <when test="detailCondition.searchType != null and @org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.searchType)">
+				        <if test="detailCondition.searchType == 'itemCd'">
+				            AND B.ITEM_CD LIKE '%' || #{detailCondition.searchWord} || '%'
+				        </if>
+				        <if test="detailCondition.searchType == 'itemNm'">
+				            AND B.ITEM_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				        </if>
+				        <if test="detailCondition.searchType == 'itemCate'">
+				            AND  D.COMM_CD_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				        </if>
+				    </when>
+				    <otherwise>
+				        	 B.ITEM_CD LIKE '%' || #{detailCondition.searchWord} || '%'
+				        	 OR
+				        	 B.ITEM_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				        	 OR
+				        	 D.COMM_CD_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				    </otherwise>
+				</choose>
+		 </trim>
+	</sql>
+
+
+	<select id="selectTotalRecord" resultType="int" parameterType="kr.or.ddit.paging.vo.PaginationInfo">
+		SELECT COUNT(*)
+		FROM(
+			SELECT
+				A.ITEM_CD
+				,A.WARE_CD
+				,A.SEC_CD2
+				,A.WARE_QTY
+				,B.ITEM_NM
+				,B.ITEM_UNIT
+				,B.ITEM_SAFE_QTY
+				,B.ITEM_YN
+				,B.ITEM_NOTE
+				,B.IT_MAKER
+				,B.IT_WGHT
+				,B.IT_COLOR
+				,B.ITEM_INPR
+				,B.ITEM_OUTPR
+				,B.ITEM_QTY
+				,C.WARE_NM
+                ,D.COMM_CD_NM AS ITEM_CATE
+			FROM
+				ITEM_WARE A
+			INNER JOIN	
+				ITEM B ON A.ITEM_CD = B.ITEM_CD
+			JOIN WARE C ON A.WARE_CD = C.WARE_CD
+            JOIN COMM_CD D ON B.ITEM_CATE = D.COMM_CD
+            <include refid="itemSearchFrag" />
+		)
+	</select>
+
+	<select id="selectItemInvenAll" resultMap="itemInvenAll">
+		WITH ITEMLIST AS(
+			SELECT ROWNUM RNUM , A.*
+		FROM (
+			SELECT
+				A.ITEM_CD
+				,A.WARE_CD
+				,A.SEC_CD2
+				,A.WARE_QTY
+				,B.ITEM_NM
+				,B.ITEM_UNIT
+				,B.ITEM_SAFE_QTY
+				,B.ITEM_YN
+				,B.ITEM_NOTE
+				,B.IT_MAKER
+				,B.IT_WGHT
+				,B.IT_COLOR
+				,B.ITEM_INPR
+				,B.ITEM_OUTPR
+				,B.ITEM_QTY
+				,C.WARE_NM
+				,D.COMM_CD_NM AS ITEM_CATE
+			FROM
+				ITEM_WARE A
+			INNER JOIN
+				ITEM B ON A.ITEM_CD = B.ITEM_CD
+			JOIN 
+				WARE C ON A.WARE_CD = C.WARE_CD
+			JOIN 
+				COMM_CD D ON B.ITEM_CATE = D.COMM_CD
+				<include refid="itemSearchFrag" />
+			ORDER BY 
+				B.ITEM_NM ASC
+			)A
+			)
+		SELECT *
+		FROM ITEMLIST
+		WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	<select id="selectItemDetail" parameterType="kr.or.ddit.storage.vo.ItemWareVO" resultMap="itemInvenAll">
+	
+			SELECT
+				A.ITEM_CD
+				,A.WARE_CD
+				,A.SEC_CD2
+				,A.WARE_QTY
+				,B.ITEM_NM
+				,B.ITEM_UNIT
+				,B.ITEM_SAFE_QTY
+				,B.ITEM_YN
+				,B.ITEM_NOTE
+				,B.IT_MAKER
+				,B.IT_WGHT
+				,B.IT_COLOR
+				,B.ITEM_INPR
+				,B.ITEM_OUTPR
+				,B.ITEM_QTY
+				,C.WARE_NM
+				,D.COMM_CD_NM AS ITEM_CATE
+			FROM
+				ITEM_WARE A
+			INNER JOIN
+				ITEM B ON A.ITEM_CD = B.ITEM_CD
+			JOIN 
+				WARE C ON A.WARE_CD = C.WARE_CD
+			JOIN 
+				COMM_CD D ON B.ITEM_CATE = D.COMM_CD
+			WHERE
+				A.ITEM_CD=#{itemCd}
+			AND
+				A.SEC_CD2=#{secCd2}
+	</select>
+	
+</mapper>

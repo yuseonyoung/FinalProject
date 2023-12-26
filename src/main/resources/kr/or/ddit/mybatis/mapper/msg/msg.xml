@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.msg.dao.MsgDao">
+	
+
+	<!-- 기업 내 모든 사용자 -->
+	<select id="coUserList" resultType="kr.or.ddit.employee.vo.EmpVO">
+		SELECT
+		    EMP_CD
+		FROM
+		    EMP
+	</select>
+	
+	<!-- 전체 알람 목록 모두 읽음 표시하기 -->
+	<update id="readAllUpdate" parameterType="kr.or.ddit.msg.vo.MsgVO">
+	    UPDATE 
+	    	MSG_IN
+	    SET
+	    	MSG_STAT = 'V007'
+	    WHERE 
+	    	1=1
+	    AND
+	    	EMP_CD = #{empCd}
+	    AND
+	    	MSG_STAT = #{msgStat}
+	</update>
+	
+	<!-- 보낸 쪽지 -->
+	<select id="listSender" resultType="kr.or.ddit.msg.vo.MsgVO">
+		SELECT
+              A.MSG_NO
+            , A.EMP_CD
+            , A.MSG_TITLE
+            , A.MSG_CONT
+            , A.MSG_DATE
+            , A.MSG_STAT
+            , A.MSG_STAT_DT
+            , C.EMP_NM
+            , C.EMP_IMG
+			, G.DEPT_NM
+            , F.COMM_CD_NM
+            , H.COMM_CD_NM
+        FROM
+            MSG_OUT A
+        INNER JOIN
+            MSG_IN B ON B.MSG_NO = A.MSG_NO
+        INNER JOIN
+            EMP C ON C.EMP_CD = B.EMP_CD
+        INNER JOIN
+            EMP_INFO D ON D.EMP_CD = C.EMP_CD
+        INNER JOIN
+            COMM_CD F ON F.COMM_CD = D.HR_GRADE
+		INNER JOIN
+			DEPT G ON G.DEPT_NO = D.DEPT_NO
+		INNER JOIN
+			COMM_CD H ON H.COMM_CD = A.MSG_STAT
+		WHERE
+			1=1
+		<if test="msgStat!=null and msgStat!=''">
+		AND
+			A.MSG_STAT = #{msgStat}
+		</if>
+		<if test="empCd!=null and empCd!=''">
+		AND
+			A.EMP_CD = #{empCd}
+		</if>
+		ORDER BY
+			A.MSG_NO DESC
+	</select>
+
+	<!-- 보낸 쪽지 추가할 때 -->
+	<insert id="insertSender" parameterType="kr.or.ddit.msg.vo.MsgVO">
+		<selectKey resultType="int" order="BEFORE"
+			keyProperty="msgNo">
+			SELECT NVL(MAX(MSG_NO),0)+1 FROM MSG_OUT
+		</selectKey>
+			INSERT INTO MSG_OUT
+			(
+			  MSG_NO
+			, EMP_CD
+			, MSG_TITLE
+			, MSG_CONT
+			, MSG_DATE
+			, MSG_STAT
+			, MSG_STAT_DT
+	
+			) VALUES (
+			  #{msgNo}
+			, #{sender}
+			, #{msgTitle}
+			, #{msgCont}
+			, sysdate
+			, #{msgStat}
+			, sysdate
+			)
+	</insert>
+
+	<!-- 보낸 쪽지 상세내용 -->
+	<select id="detailSender" parameterType="kr.or.ddit.msg.vo.MsgVO">
+		SELECT
+		  A.MSG_NO
+		, A.EMP_CD
+		, A.MSG_TITLE
+		, A.MSG_CONT
+		, A.MSG_DATE
+		, A.MSG_STAT
+		, A.MSG_STAT_DT
+		, B.EMP_NM
+		, B.EMP_IMG
+		FROM
+			MSG_OUT A
+		INNER JOIN
+			EMP B ON A.EMP_CD = B.EMP_CD
+		WHERE
+			MSG_NO = #{msgNo}
+	</select>
+
+	<!-- 받은 쪽지 -->
+	<select id="listReceiver" resultType="kr.or.ddit.msg.vo.MsgVO">
+		SELECT
+    		  A.MSG_NO
+  			, A.EMP_CD
+  			, A.MSG_STAT
+  			, A.MSG_STAT_DT
+  			, B.EMP_NM
+  			, B.EMP_IMG
+  			, C.MSG_TITLE
+  			, C.MSG_CONT
+  			, C.MSG_DATE
+  			, F.COMM_CD_NM
+  			, FN_GET_COMM_CD_NM(D.HR_GRADE) AS HR_GRADE_NM
+  			, G.DEPT_NO
+  			, FN_GET_DEPT_NO_NM(G.DEPT_NO) AS DEPT_NM
+  			, FN_GET_COMM_CD_NM(A.MSG_STAT) AS MSG_STAT_NM
+		FROM
+		    MSG_IN A
+		INNER JOIN
+			EMP B on A.EMP_CD = B.EMP_CD
+		INNER JOIN
+			MSG_OUT C on A.MSG_NO = C.MSG_NO
+		INNER JOIN
+			HR_INFO D on A.EMP_CD = D.EMP_CD
+		INNER JOIN
+			COMM_CD F on D.HR_GRADE = F.COMM_CD
+		INNER JOIN
+			DEPT G on G.DEPT_NO = D.DEPT_NO
+		INNER JOIN
+			COMM_CD H on H.COMM_CD = A.MSG_STAT
+		WHERE
+			1=1
+		<if test="msgStat!=null and msgStat!=''">
+		AND
+			A.MSG_STAT = #{msgStat}
+		</if>
+		<if test="empCd!=null and empCd!=''">
+		AND
+			A.EMP_CD = #{empCd}
+		</if>
+		ORDER BY
+			A.MSG_NO DESC
+	</select>
+
+	<!-- 받은 쪽지 추가할 때 -->
+	<insert id="insertReceiver" parameterType="kr.or.ddit.msg.vo.MsgVO">
+		<!-- 최대 숫자 가져오기 -->
+		<selectKey resultType="int" order="BEFORE"
+			keyProperty="msgNo">
+			SELECT 
+				NVL(MAX(MSG_NO),0)+1 
+			FROM
+				MSG_IN
+		</selectKey>
+
+		INSERT INTO MSG_IN (
+		  MSG_NO
+		, EMP_CD
+		, MSG_STAT
+		, MSG_STAT_DT
+		) VALUES
+		(
+		  #{msgNo}
+		, #{empCd}
+		, #{msgStat}
+		, sysdate
+		)
+	</insert>
+	<!-- 받은 쪽지 상세내용 -->
+	<select id="detailReceiver" parameterType="kr.or.ddit.msg.vo.MsgVO" resultType="kr.or.ddit.msg.vo.MsgVO">
+		SELECT
+    		  A.MSG_NO
+  			, C.EMP_CD
+  			, B.EMP_IMG
+  			, A.MSG_STAT
+  			, A.MSG_STAT_DT
+  			, B.EMP_NM
+  			, C.MSG_TITLE
+  			, C.MSG_CONT
+  			, C.MSG_DATE
+  			, F.COMM_CD_NM
+  			, G.DEPT_NM
+  			, H.COMM_CD_NM
+		FROM
+		    MSG_IN A
+		INNER JOIN
+			MSG_OUT C on A.MSG_NO = C.MSG_NO
+		INNER JOIN
+			EMP B on C.EMP_CD = B.EMP_CD
+		INNER JOIN
+			HR_INFO D on C.EMP_CD = D.EMP_CD
+		INNER JOIN
+			COMM_CD F on D.HR_GRADE = F.COMM_CD
+		INNER JOIN
+			DEPT G on G.DEPT_NO = D.DEPT_NO
+		INNER JOIN
+			COMM_CD H on H.COMM_CD = A.MSG_STAT
+		WHERE
+			A.MSG_NO = #{msgNo}
+	</select>
+	
+	<!-- 받은 쪽지 휴지통,삭제,복원,중요 -->
+	<update id="updateReceiver" parameterType="kr.or.ddit.msg.vo.MsgVO">
+		UPDATE
+		    MSG_IN
+		SET
+		      MSG_STAT = #{msgStat}
+		    , MSG_STAT_DT = SYSDATE
+		WHERE
+		    MSG_NO = #{msgNo}
+	</update>
+	
+	<!-- 보낸 쪽지 휴지통,삭제,복원 -->
+	<update id="updateSender" parameterType="kr.or.ddit.msg.vo.MsgVO">
+		UPDATE
+		    MSG_OUT
+		SET
+		      MSG_STAT = #{msgStat}
+		    , MSG_STAT_DT = SYSDATE
+		WHERE
+		    MSG_NO = #{msgNo}
+	</update>
+
+</mapper>

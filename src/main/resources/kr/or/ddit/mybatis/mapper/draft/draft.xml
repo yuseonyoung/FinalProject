@@ -1,0 +1,766 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.draft.dao.DraftDao">
+
+	<resultMap type="EmpInfoVO" id="draftUserMap">
+	   <result property="empCd" column="EMP_CD" />
+	   <result property="empNm" column="EMP_NM" />
+	   <result property="empMail" column="EMP_MAIL" />
+	   <result property="empImg" column="EMP_IMG" />
+	   <result property="empSign" column="EMP_SIGN" />
+	   
+	   <result property="deptNo" column="DEPT_NO" />
+	   <result property="deptNm" column="DEPT_NM" />
+	   <result property="hrGrade" column="HR_GRADE" />
+	   <result property="hrGradeNm" column="HR_GRADE_NM" />
+	   <result property="hrCharge" column="HR_CHARGE" />
+	   <result property="hrChargeNm" column="HR_CHARGE_NM" />
+	   <result property="hrBankNo" column="HR_BANK_NO" />
+	   
+	   <collection property="draftVacVOList" resultMap="draftVacMap"></collection>
+	</resultMap>
+	
+	<resultMap type="kr.or.ddit.draft.vo.DraftVacVO" id="draftVacMap">
+		<result property="vacGrtNo" column="VAC_GRT_NO" />
+		<result property="empCd" column="EMP_CD" />
+		<result property="vacGrtType" column="VAC_GRT_TYPE" />
+		<result property="vacGrtTypeNm" column="VAC_GRT_TYPE_NM" />
+		<result property="vacGrtDate" column="VAC_GRT_DATE" />
+		<result property="vacGrtDays" column="VAC_GRT_DAYS" />
+		<result property="vacGrtVal" column="VAC_GRT_VAL" />
+		<result property="usedDays" column="USED_DAYS" />
+		<result property="remainVacDays" column="REMAIN_VAC_DAYS" />
+		<result property="vacRsn" column="VAC_RSN" />
+		<result property="vacNo" column="VAC_NO" />
+		<result property="usedDays" column="USED_DAYS" />
+		<result property="vacSdate" column="VAC_SDATE" />
+		<result property="vacEdate" column="VAC_EDATE" />
+		<result property="vacDays" column="VAC_DAYS" />
+	</resultMap>
+
+	<resultMap type="DraftVO" id="draftVOMap">
+		<result property="drftNo" column="DRFT_NO" />
+		<result property="empCd" column="EMP_CD" />
+		<result property="empNm" column="EMP_NM" />
+		<result property="deptNm" column="DEPT_NM" />
+		<result property="drftStat" column="DRFT_STAT" />
+		<result property="drftFndate" column="DRFT_FNDATE" />
+		<result property="drftSave" column="DRFT_SAVE" jdbcType="CLOB" javaType="java.lang.String" />
+		<result property="drftWdate" column="DRFT_WDATE" />
+		<result property="drftYn" column="DRFT_YN" />
+		<result property="drftDdate" column="DRFT_DDATE" />
+		<result property="drftTitle" column="DRFT_TITLE" />
+		<collection property="drftOpVOList" resultMap="drftOpVOMap"></collection>
+		<collection property="drftAtchVOList" resultMap="drftAtchVOMap"></collection>
+		<collection property="drftLineVOList" resultMap="drftLineVOMap"></collection>
+	</resultMap>
+	
+	<resultMap type="DraftOpVO" id="drftOpVOMap">
+		<result property="opNo" column="OP_NO" />
+		<result property="drftNo" column="DRFT_NO" />
+		<result property="empCd" column="OP_EMP_CD" />
+		<result property="opCont" column="OP_CONT" />
+		<result property="opWdate" column="OP_WDATE" />
+		<result property="opYn" column="DRFT_OP_YN" />
+		<result property="opDdate" column="DRFT_OP_DDATE" />
+	</resultMap>
+	
+	<resultMap type="DraftLineVO" id="drftLineVOMap">
+		<result property="drftNo" column="DRFT_NO" />
+		<result property="empCd" column="LINE_EMP_CD" />
+		<result property="dlineSq" column="DLINE_SQ" />
+		<result property="dlineCd" column="DLINE_CD" />
+		<result property="dlineStatCd" column="DLINE_STAT_CD" />
+		<result property="dlineDt" column="DLINE_DT" />
+		<result property="empNm" column="EMP_NM" />
+		<result property="deptNm" column="DEPT_NM" />
+		<result property="deptNo" column="DEPT_NO" />
+		<result property="hrGrade" column="HR_GRADE" />
+		<result property="hrGradeNm" column="HR_GRADE_NM" />
+		<result property="empImg" column="EMP_IMG" />
+		<result property="empSign" column="EMP_SIGN" />
+		<result property="maxDlineSq" column="MAX_DLINE_SQ" />
+	</resultMap>
+	
+	<resultMap type="DraftAtchVO" id="drftAtchVOMap">
+		<result property="datchNo" column="DATCH_NO" />
+		<result property="drftNo" column="DRFT_NO" />
+		<result property="drftOrgNm" column="DRFT_ORG_NM" />
+		<result property="drftSaveNm" column="DRFT_SAVE_NM" />
+		<result property="drftPath" column="DRFT_PATH" />
+		<result property="drftType" column="DRFT_TYPE" />
+		<result property="drftSize" column="DRFT_SIZE" />
+	</resultMap>
+
+	<select id="selectDraftEmpInfo" resultMap="draftUserMap">
+		SELECT
+			A.EMP_CD
+			, A.EMP_NM
+		    , A.EMP_TEL_NO
+		    , A.EMP_MAIL
+		    , A.EMP_IMG
+			, A.EMP_SIGN
+			, B.DEPT_NO
+			, FN_GET_DEPT_NO_NM(B.DEPT_NO) AS DEPT_NM
+			, B.HR_GRADE
+			, FN_GET_COMM_CD_NM(B.HR_GRADE) AS HR_GRADE_NM
+			, B.HR_CHARGE
+			, FN_GET_COMM_CD_NM(B.HR_CHARGE) AS HR_CHARGE_NM
+			, VG.VAC_GRT_NO
+			, VG.VAC_GRT_TYPE 
+			, FN_GET_COMM_CD_NM(VG.VAC_GRT_TYPE) AS VAC_GRT_TYPE_NM
+			
+			, VG.VAC_GRT_DATE
+			, VG.VAC_GRT_DAYS 
+			, VG.VAC_GRT_VAL 
+			, VU.TOTAL_VAC_DAYS
+			, VG.VAC_GRT_DAYS - NVL(VU.TOTAL_VAC_DAYS, 0) AS REMAIN_VAC_DAYS
+		FROM 
+			(SELECT * FROM EMP
+			WHERE EMP_CD = #{empCd} ) A
+		INNER JOIN HR_INFO B
+			ON A.EMP_CD = B.EMP_CD
+		LEFT JOIN 
+			(SELECT * FROM VAC_GRT
+			WHERE 
+				VAC_GRT_VAL >= SYSDATE
+				AND VAC_GRT_DATE <![CDATA[<=]]> SYSDATE
+				AND VAC_GRT_VAL >= SYSDATE ) VG 
+		ON VG.EMP_CD = A.EMP_CD
+		LEFT JOIN 
+			(SELECT
+				NVL(SUM(VU.VAC_DAYS), 0) AS TOTAL_VAC_DAYS
+				, VU.EMP_CD
+				, VU.VAC_GRT_NO
+			FROM 
+				VAC_USE VU
+			GROUP BY 
+				EMP_CD
+				, VU.VAC_GRT_NO ) VU
+		ON VU.EMP_CD = A.EMP_CD AND VU.VAC_GRT_NO = VG.VAC_GRT_NO
+	</select>
+	
+	<insert id="insertDraft" parameterType="kr.or.ddit.draft.vo.DraftVO">
+		<selectKey resultType="int" order="BEFORE" keyProperty="drftNo">
+			SELECT NVL(MAX(DRFT_NO), 0) + 1 FROM DRFT
+		</selectKey>
+		INSERT INTO DRFT (
+			DRFT_NO
+			, EMP_CD
+			, DRFT_STAT
+			, DRFT_SAVE
+			, DRFT_WDATE
+			, DRFT_TITLE)
+		VALUES(
+			#{drftNo}
+			, #{empCd}
+			, #{drftStat}
+			, #{drftSave}
+			, SYSDATE
+			, #{drftTitle})
+	</insert>
+	
+	<update id="insertDraftOp" parameterType="DraftVO">
+		<selectKey resultType="int" order="BEFORE" keyProperty="opNo">
+			SELECT SEQ_DRAFT_OP.NEXTVAL FROM DUAL
+		</selectKey>
+		
+		<foreach collection="drftOpVOList" item="op"
+			open="INSERT ALL " close="SELECT * FROM DUAL" separator=" " index="idx">
+			
+			INTO DRFT_OP (
+				OP_NO
+				, DRFT_NO
+				, EMP_CD
+				, OP_CONT
+				, OP_WDATE )
+			VALUES(
+				#{opNo} + #{idx}
+				, #{drftNo}
+				, #{op.empCd, jdbcType=VARCHAR}
+				, #{op.opCont, jdbcType=VARCHAR}
+				, #{op.opWdate} )	
+		</foreach>
+	</update>
+	
+	
+	<insert id="insertDraftVac" parameterType="kr.or.ddit.draft.vo.DraftVO">
+		<selectKey resultType="int" order="BEFORE" keyProperty="vacNo">
+			SELECT SEQ_VACNO.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO VAC_USE (
+				VAC_NO
+				, EMP_CD
+				, DRFT_NO
+				, VAC_DAYS
+				, VAC_SDATE
+				, VAC_EDATE
+				, VAC_GRT_NO
+				, VAC_RSN )
+			VALUES(
+			#{vacNo}
+			, #{empCd, jdbcType=VARCHAR}
+			, #{drftNo}
+			, #{draftVacVO.vacDays}
+			, #{draftVacVO.vacSdate}
+			, #{draftVacVO.vacEdate}
+			, #{draftVacVO.vacGrtNo}
+			, #{draftVacVO.vacRsn} )
+	</insert>
+	
+	
+	<update id="insertDraftAtch" parameterType="kr.or.ddit.draft.vo.DraftVO">
+		<selectKey resultType="int" order="BEFORE" keyProperty="datchNo">
+			SELECT NVL(MAX(DATCH_NO), 0) + 1 FROM DRFT_ATCH
+		</selectKey>
+		
+		<foreach collection="drftAtchVOList" item="item"
+			open="INSERT ALL " close="SELECT * FROM DUAL" separator=" " index="idx">
+				
+			INTO DRFT_ATCH (
+				DATCH_NO
+				, DRFT_NO
+				, DRFT_ORG_NM
+				, DRFT_SAVE_NM
+				, DRFT_PATH
+				, DRFT_TYPE
+				, DRFT_SIZE )
+			VALUES (
+				#{datchNo} + #{idx}
+				, #{drftNo}
+				, #{item.drftOrgNm}
+				, #{item.drftSaveNm}
+				, #{item.drftPath}
+				, #{item.drftType}
+				, #{item.drftSize} )
+				
+		</foreach>
+	</update>
+	
+	<update id="insertDraftLine" parameterType="DraftVO">
+		<foreach collection="drftLineVOList" item="line"
+			open="INSERT ALL " close="SELECT * FROM DUAL" separator=" " index="idx">
+
+			INTO DRFT_LINE (
+				DRFT_NO
+				, EMP_CD
+				, DLINE_SQ
+				, DLINE_CD
+				, DLINE_STAT_CD
+				, DLINE_DT )
+			VALUES (
+				#{drftNo}
+				, #{line.empCd}
+				, #{line.dlineSq}
+				, #{line.dlineCd}
+				, #{line.dlineStatCd, jdbcType=VARCHAR}
+				, NULL )
+				
+		</foreach>
+	</update>
+	
+	<select id="selectDraft" parameterType="map" resultMap="draftVOMap">
+		SELECT
+			d.DRFT_NO
+			, d.EMP_CD
+			, d.DRFT_TITLE
+			, d.DRFT_STAT
+			, d.DRFT_SAVE
+			, d.DRFT_WDATE
+			, d.DRFT_YN
+			, d.DRFT_DDATE
+			
+			, do.OP_NO
+			, do.EMP_CD AS OP_EMP_CD
+			, do.OP_CONT
+			, do.OP_WDATE
+			, do.OP_YN AS DRFT_OP_YN
+			, do.OP_DDATE AS DRFT_OP_DDATE
+			
+			, da.DATCH_NO
+			, da.DRFT_ORG_NM
+			, da.DRFT_SAVE_NM
+			, da.DRFT_PATH
+			, da.DRFT_TYPE
+			, da.DRFT_SIZE
+			
+			, da2.EMP_CD AS LINE_EMP_CD
+			, da2.DLINE_SQ
+			, da2.DLINE_CD
+			, da2.DLINE_STAT_CD
+			, da2.DLINE_DT
+			
+			, e.EMP_NM AS EMP_NM
+			, FN_GET_DEPT_NO_NM(hi.DEPT_NO) AS DEPT_NM
+			, FN_GET_COMM_CD_NM(hi.HR_GRADE) AS HR_GRADE_NM
+			, e.EMP_IMG
+			, e.EMP_SIGN
+		FROM (
+			SELECT *
+			FROM DRFT d2
+			WHERE d2.DRFT_NO = #{drftNo} ) d 
+		LEFT JOIN DRFT_OP do 
+		ON do.DRFT_NO = d.DRFT_NO 
+		LEFT JOIN DRFT_ATCH da
+		ON da.DRFT_NO = d.DRFT_NO 
+		INNER JOIN DRFT_LINE da2 
+		ON da2.DRFT_NO = d.DRFT_NO 
+		INNER JOIN HR_INFO hi
+		ON hi.EMP_CD = da2.EMP_CD
+		INNER JOIN EMP e
+		ON e.EMP_CD = da2.EMP_CD 
+		ORDER BY d.DRFT_NO, da2.DLINE_SQ	
+	</select>
+	
+	<select id="selectMyDraftList" parameterType="map" resultType="DraftVO">
+			SELECT 
+				DRFT_NO
+				, EMP_CD
+				, DRFT_STAT
+				, DRFT_WDATE
+				, DRFT_YN
+				, DRFT_DDATE
+				, DRFT_TITLE
+				, DRFT_FNDATE
+			FROM DRFT d2
+			WHERE d2.EMP_CD = #{empCd}
+			AND d2.DRFT_YN = 'N'
+			<if test="drftStat != null and drftStat !=''">
+		      AND DRFT_STAT = #{drftStat}
+		    </if>
+			ORDER BY DRFT_NO DESC
+	</select>
+	
+	
+	<select id="myDraftSusinList" parameterType="map" resultType="kr.or.ddit.draft.vo.DraftVO">
+			WITH T AS (
+		    SELECT
+		        da.DRFT_NO
+		        , da.EMP_CD
+		        , da.DLINE_SQ
+		        , da.DLINE_CD
+		        , da.DLINE_STAT_CD
+		        , da.DLINE_DT
+		    FROM (
+		        SELECT *
+		        FROM
+		            DRFT_LINE
+		        WHERE 
+		            DLINE_CD = 'M002'
+		        AND 
+		       		EMP_CD = #{empCd}
+		       	AND 
+	        		DLINE_STAT_CD IS NOT NULL 
+		    ) da
+		    INNER JOIN (
+		        SELECT *
+		        FROM DRFT_LINE
+		        WHERE DLINE_STAT_CD IS NOT NULL 
+		       )da3
+		    ON da3.DRFT_NO = da.DRFT_NO
+		    AND da3.DLINE_SQ IN da.DLINE_SQ - 1
+		    UNION 
+		    SELECT 
+		        DRFT_NO
+		        , EMP_CD
+		        , DLINE_SQ
+		        , DLINE_CD
+		        , DLINE_STAT_CD
+		        , DLINE_DT
+		    FROM (
+		        SELECT *
+		        FROM DRFT_LINE
+		        WHERE DLINE_SQ = 0
+		        AND EMP_CD = #{empCd} 
+                AND DLINE_STAT_CD IS NOT NULL
+		    ) da
+		), F AS (
+		    SELECT 
+		         d.DRFT_NO
+		        , d.EMP_CD
+		        , d.DRFT_TITLE
+		        , FN_GET_EMP_NM(d.EMP_CD) AS EMP_NM
+		        , d2.DEPT_NM 
+		        , d.DRFT_STAT
+		        , d.DRFT_WDATE
+		        , d.DRFT_YN
+		    FROM DRFT d
+		    INNER JOIN HR_INFO hi
+		    ON hi.EMP_CD = d.EMP_CD
+		    INNER JOIN DEPT d2
+		    ON d2.DEPT_NO = hi.DEPT_NO
+		),  J AS (
+		    SELECT 
+		        da.DRFT_NO
+		        , MAX(da.DLINE_SQ) AS MAX_DLINE_SQ
+		    FROM DRFT_LINE da
+		    GROUP BY da.DRFT_NO
+		)
+		SELECT 
+		    F.DRFT_NO
+		    , F.EMP_CD
+		    , F.DRFT_STAT
+		    , F.EMP_NM
+		    , F.DEPT_NM
+		    , F.DRFT_STAT
+		    , F.DRFT_WDATE
+		    , F.DRFT_YN
+		    , F.DRFT_TITLE
+		    , T.EMP_CD AS DRFT_LINE_EMP_CD
+		    , T.DLINE_SQ
+		    , T.DLINE_CD
+		    , T.DLINE_STAT_CD
+		    , T.DLINE_DT
+		    , J.MAX_DLINE_SQ
+		FROM T
+		LEFT JOIN F
+		ON F.DRFT_NO = T.DRFT_NO
+		LEFT JOIN J
+		ON J.DRFT_NO = T.DRFT_NO
+		ORDER BY F.DRFT_NO DESC
+	</select>
+	
+	<select id="myDraftRamList" parameterType="map" resultType="kr.or.ddit.draft.vo.DraftVO">
+			WITH T AS (
+		    SELECT
+		        da.DRFT_NO
+		        , da.EMP_CD
+		        , da.DLINE_SQ
+		        , da.DLINE_CD
+		        , da.DLINE_STAT_CD
+		        , da.DLINE_DT
+		    FROM (
+		        SELECT *
+		        FROM
+		            DRFT_LINE
+		        WHERE 
+		            DLINE_CD = 'M003'
+		        AND 
+		       		EMP_CD = #{empCd}
+		       	AND 
+	        		DLINE_STAT_CD IS NULL 
+		    ) da
+		    INNER JOIN (
+		        SELECT *
+		        FROM DRFT_LINE
+		        WHERE DLINE_STAT_CD = 'N001'
+		       )da3
+		    ON da3.DRFT_NO = da.DRFT_NO
+		    AND da3.DLINE_SQ IN da.DLINE_SQ - 1
+		    UNION 
+		    SELECT 
+		        DRFT_NO
+		        , EMP_CD
+		        , DLINE_SQ
+		        , DLINE_CD
+		        , DLINE_STAT_CD
+		        , DLINE_DT
+		    FROM (
+		        SELECT *
+		        FROM DRFT_LINE
+		        WHERE DLINE_SQ = 0
+		        AND EMP_CD = #{empCd} 
+                AND DLINE_CD = 'M003'
+		    ) da
+		), F AS (
+		    SELECT 
+		         d.DRFT_NO
+		        , d.EMP_CD
+		        , d.DRFT_TITLE
+		        , FN_GET_EMP_NM(d.EMP_CD) AS EMP_NM
+		        , d2.DEPT_NM 
+		        , d.DRFT_STAT
+		        , d.DRFT_WDATE
+		        , d.DRFT_YN
+		    FROM DRFT d
+		    INNER JOIN HR_INFO hi
+		    ON hi.EMP_CD = d.EMP_CD
+		    INNER JOIN DEPT d2
+		    ON d2.DEPT_NO = hi.DEPT_NO
+		),  J AS (
+		    SELECT 
+		        da.DRFT_NO
+		        , MAX(da.DLINE_SQ) AS MAX_DLINE_SQ
+		    FROM DRFT_LINE da
+		    GROUP BY da.DRFT_NO
+		)
+		SELECT 
+		    F.DRFT_NO
+		    , F.EMP_CD
+		    , F.DRFT_STAT
+		    , F.EMP_NM
+		    , F.DEPT_NM
+		    , F.DRFT_STAT
+		    , F.DRFT_WDATE
+		    , F.DRFT_YN
+		    , F.DRFT_TITLE
+		    , T.EMP_CD AS DRFT_LINE_EMP_CD
+		    , T.DLINE_SQ
+		    , T.DLINE_CD
+		    , T.DLINE_STAT_CD
+		    , T.DLINE_DT
+		    , J.MAX_DLINE_SQ
+		FROM T
+		LEFT JOIN F
+		ON F.DRFT_NO = T.DRFT_NO
+		LEFT JOIN J
+		ON J.DRFT_NO = T.DRFT_NO
+		ORDER BY F.DRFT_NO DESC
+	</select>
+	
+	
+	
+	<update id="logicalDelDraft" parameterType="kr.or.ddit.draft.vo.DraftVO">
+		UPDATE DRFT
+		SET
+			DRFT_YN = 'Y'
+			, DRFT_DDATE = SYSDATE
+		WHERE
+			DRFT_NO = #{drftNo}
+	</update>
+	
+	<select id="myDraftLineList" resultMap="draftVOMap">
+		WITH T AS (
+		    SELECT
+		        da.DRFT_NO
+		        , da.EMP_CD
+		        , da.DLINE_SQ
+		        , da.DLINE_CD
+		        , da.DLINE_STAT_CD
+		        , da.DLINE_DT
+		    FROM (
+		        SELECT *
+		        FROM
+		            DRFT_LINE
+		        WHERE 
+		            DLINE_CD = 'M001'
+		        AND 
+		       		EMP_CD = #{empCd}
+		       	AND 
+	        		DLINE_STAT_CD IS NULL 
+		    ) da
+		    INNER JOIN (
+		        SELECT *
+		        FROM DRFT_LINE
+		        WHERE DLINE_STAT_CD = 'N001'
+		       )da3
+		    ON da3.DRFT_NO = da.DRFT_NO
+		    AND da3.DLINE_SQ IN da.DLINE_SQ - 1
+		    UNION 
+		    SELECT 
+		        DRFT_NO
+		        , EMP_CD
+		        , DLINE_SQ
+		        , DLINE_CD
+		        , DLINE_STAT_CD
+		        , DLINE_DT
+		    FROM (
+		        SELECT *
+		        FROM DRFT_LINE
+		        WHERE DLINE_SQ = 1
+		        AND EMP_CD = #{empCd} 
+		    ) da
+		), F AS (
+		    SELECT 
+		         d.DRFT_NO
+		        , d.EMP_CD
+		        , d.DRFT_TITLE
+		        , FN_GET_EMP_NM(d.EMP_CD) AS EMP_NM
+		        , d2.DEPT_NM 
+		        , d.DRFT_STAT
+		        , d.DRFT_WDATE
+		        , d.DRFT_YN
+		    FROM DRFT d
+		    INNER JOIN HR_INFO hi
+		    ON hi.EMP_CD = d.EMP_CD
+		    INNER JOIN DEPT d2
+		    ON d2.DEPT_NO = hi.DEPT_NO
+		),  J AS (
+		    SELECT 
+		        da.DRFT_NO
+		        , MAX(da.DLINE_SQ) AS MAX_DLINE_SQ
+		    FROM DRFT_LINE da
+		    GROUP BY da.DRFT_NO
+		)
+		SELECT 
+		    F.DRFT_NO
+		    , F.EMP_CD
+		    , F.DRFT_STAT
+		    , F.EMP_NM
+		    , F.DEPT_NM
+		    , F.DRFT_STAT
+		    , F.DRFT_WDATE
+		    , F.DRFT_YN
+		    , F.DRFT_TITLE
+		    , T.EMP_CD AS DRFT_LINE_EMP_CD
+		    , T.DLINE_SQ
+		    , T.DLINE_CD
+		    , T.DLINE_STAT_CD
+		    , T.DLINE_DT
+		    , J.MAX_DLINE_SQ
+		FROM T
+		LEFT JOIN F
+		ON F.DRFT_NO = T.DRFT_NO
+		LEFT JOIN J
+		ON J.DRFT_NO = T.DRFT_NO
+		ORDER BY F.DRFT_NO DESC
+	</select>
+	
+	<update id="updateDlineStat" parameterType="kr.or.ddit.draft.vo.DraftVO">
+		UPDATE
+			DRFT_LINE
+		SET
+			DLINE_STAT_CD = #{drftLineVOList[0].dlineStatCd}
+			, DLINE_DT = SYSDATE
+		WHERE
+			DRFT_NO = #{drftNo}
+			AND EMP_CD = #{drftLineVOList[0].empCd}
+	</update>
+	
+	<update id="updateDraftStat" parameterType="kr.or.ddit.draft.vo.DraftVO">
+		UPDATE
+			DRFT
+		SET
+			DRFT_STAT = #{drftStat}
+			, DRFT_FNDATE = SYSDATE
+		WHERE
+			DRFT_NO = #{drftNo}
+	</update>
+	
+	
+	<select id="selectPordCd" resultType="DraftOrderVO">
+		SELECT PORD_CD FROM PUR_ORD WHERE PORD_STAT = 'T004'
+	</select>
+	
+	
+	<select id="selectOrderPlayDetailList" parameterType="string" resultType="hashMap">
+		WITH COMPRODVIEW AS(
+		 SELECT  PO.PORD_CD 
+					, POI.PORD_QTY 
+                    , POI.PORD_UPRC 
+					, PO.PORD_DATE 
+					, PO.DUE_DATE 
+		            ,ITEM.ITEM_NM 
+					, ITEM.ITEM_CD 
+					, ITEM.ITEM_UNIT 
+		            , EMP.EMP_NM
+					, EMP.EMP_CD 
+					, com.COM_NM 
+                    , com.COM_NO
+                    , com.COM_CEO
+                    , com.COM_TEL
+                    , com.COM_ADDR
+                    , com.COM_DADDR
+                    , com.COM_FAX
+                    , com.COM_MN
+                    , com.COM_MAIL
+					, FN_GET_COMM_CD_NM(PO.PORD_STAT) "PORD_STAT"
+		   FROM PUR_ORD PO
+		   INNER JOIN PUR_ORD_ITEM POI
+					ON PO.PORD_CD=POI.PORD_CD
+		   INNER JOIN ITEM ITEM
+					ON POI.ITEM_CD=ITEM.ITEM_CD
+		   INNER JOIN COM COM
+					ON POI.COM_CD=COM.COM_CD
+		   LEFT OUTER JOIN EMP EMP
+					ON EMP.EMP_CD=PO.EMP_CD
+		)
+		SELECT 
+		   CPV.ITEM_NM 
+            , CPV.ITEM_UNIT
+            , CPV.ITEM_CD
+            , CPV.PORD_CD 
+            , CPV.PORD_UPRC
+            , CPV.PORD_QTY 
+            , CPV.PORD_DATE 
+            , CPV.DUE_DATE 
+            , CPV.EMP_NM
+            , CPV.COM_NM 
+            , CPV.COM_NO
+            , CPV.COM_CEO
+            , CPV.COM_TEL
+            , CPV.COM_ADDR
+            , CPV.COM_DADDR
+            , CPV.COM_FAX
+            , CPV.COM_MN
+            , CPV.COM_MAIL
+            , PORD_STAT
+
+		FROM COMPRODVIEW CPV
+		LEFT OUTER JOIN ITEM_UPRC IU
+		ON IU.ITEM_CD=CPV.ITEM_CD AND CPV.PORD_DATE BETWEEN IU.UPRC_CONF AND IU.UPRC_EDATE
+		WHERE PORD_CD=#{pordCd, jdbcType=VARCHAR}
+     </select>
+     
+     <update id="updatePordStat" parameterType="string">
+     	UPDATE
+	        PUR_ORD
+	    SET
+	        PORD_STAT = 'T001'
+	    WHERE
+	        PORD_CD = #{pordCd}
+     </update>
+     
+     
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+	
+	<select id="selectDformList" resultType="kr.or.ddit.draft.vo.DraftFormVO">
+		SELECT
+		    DFORM_NO,
+		    DFORM_WDATE,
+		    DFORM_NM,
+		    DFORM_EXPL,
+		    DFORM_YN,
+		    DFORM_CONT
+		FROM
+		    DRFT_FORM
+	</select>
+	
+	<insert id="insertDform" parameterType="kr.or.ddit.draft.vo.DraftFormVO">
+		<selectKey resultType="int" order="BEFORE" keyProperty="dformNo">
+			SELECT NVL(MAX(dformNo), 0) + 1 FROM DRFT_FORM
+		</selectKey>
+		INSERT INTO DRFT_FORM (
+		    DFORM_NO,
+		    DFORM_WDATE,
+		    DFORM_NM,
+		    DFORM_EXPL,
+		    DFORM_YN,
+		    DFORM_CONT
+		) VALUES (
+		    #{dformNo},
+		    NULL,
+		    #{dformNm},
+		    #{dformExpl},
+		    NULL,
+		    #{dformCont}
+		)
+	</insert>
+
+	<!-- 선생님하고 추가한 기능 -->
+	<select id="selectDform" parameterType="int" resultType="kr.or.ddit.draft.vo.DraftFormVO">
+		SELECT
+		    DFORM_NO,
+		    DFORM_WDATE,
+		    DFORM_NM,
+		    DFORM_EXPL,
+		    DFORM_YN,
+		    DFORM_CONT
+		FROM
+		    DRFT_FORM
+		WHERE DFORM_NO = #{dformNo}
+	</select>
+
+</mapper>

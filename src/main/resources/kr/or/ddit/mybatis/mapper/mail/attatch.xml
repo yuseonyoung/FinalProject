@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- [[개정이력(Modification Information)]] -->
+<!-- 수정일 수정자 수정내용 -->
+<!-- ========== ====== ============== -->
+<!-- 2023. 11. 20.} 이수정 최초작성 -->
+<!-- Copyright (c) 2023 by DDIT All right reserved -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mail.dao.AttatchDAO">
+	<insert id="insertAttatch"
+		parameterType="kr.or.ddit.mail.vo.AttatchVO">
+		<selectKey resultType="int" order="BEFORE"
+			keyProperty="mailAtchNo">
+			SELECT NVL(MAX(mail_atch_no),0)+1
+			FROM MAIL_ATCH
+		</selectKey>
+		INSERT INTO MAIL_ATCH (
+		MAIL_ATCH_NO,
+		MAIL_ORG_NM,
+		MAIL_SV_NM,
+		MAIL_PATH,
+		MAIL_ATCH_SIZE,
+		MAIL_NO,
+		MAIL_ATCH_FANCYSIZE
+		) VALUES (
+		#{mailAtchNo}
+		,#{mailOrgNm}
+		,#{mailSvNm}
+		,#{mailPath}
+		,#{mailAtchSize}
+		,#{mailNo}
+		,#{mailAtchFancysize}
+		)
+	</insert>
+	<select id="selectAttatch" parameterType="int">
+		SELECT
+		MAIL_ATCH_NO,
+		MAIL_ORG_NM,
+		MAIL_SV_NM,
+		MAIL_PATH,
+		MAIL_ATCH_SIZE,
+		MAIL_NO,
+		MAIL_ATCH_FANCYSIZE
+		FROM
+		MAIL_ATCH
+		WHERE MAIL_ATCH_NO=#{mailAtchNo}
+
+	</select>
+</mapper>

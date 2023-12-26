@@ -1,0 +1,102 @@
+@charset "UTF-8";
+
+.custom-offcanvas-body {
+	max-height: calc(100vh - 210px);
+	overflow-y: auto;
+}
+
+.wrapper {
+	display: grid;
+	grid-template-columns: 1fr;
+	grid-template-rows: 100px 100px 100px;
+	grid-gap: 100px;
+}
+
+#search1 {
+	width: 200px;
+	height: 25px;
+	border: 0;
+	border-radius: 5px;
+	font-size: 15px;
+	background-color: #E1ECFF;
+}
+
+#searchBox {
+	width: 200px;
+	font-size: 10px;
+}
+
+#jstree1 {
+	width: 20rem;
+	/* 	flex: 0 0 30%; */
+	/* 	margin-right: 10px; */
+	grid-column: 2/4;
+	grid-row: 1;
+	/* 	overflow: auto; */
+	overflow: overlay;
+	position: relative;
+}
+
+#jstree1::-webkit-scrollbar {
+	width: 10px;
+}
+
+#jstree1::-webkit-scrollbar-thumb {
+	background-color: hsla(207.2, 63.9%, 87.1%, 0.45);
+	border-radius: 100px;
+}
+
+#jstree1 ul li {
+	/* line-height: 50px;  */
+	/* border-bottom: 1px solid #fff;  */
+	/* text-align: center;  */
+	/* font-size: 22px;  */
+	/* background-color:#EFF5FB */
+	
+}
+
+#outBox {
+	display: flex;
+	height: 700px;
+}
+
+#childCard {
+	width: 400px;
+	height: 400px;
+}
+
+.card .image {
+	/* 	display: flex; */
+	max-width: 90%;
+	height: auto;
+	text-align: left;
+	padding: 10px;
+	/* 	max-width: auto; */
+	width: 130px;
+	height: 130px;
+}
+
+.card .image img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+.card-container2 {
+	display: flex;
+	/* 	align-items: flex-start; */
+}
+
+.card .card-body {
+	/* 남은 공간을 모두 차지하도록 설정 */
+	/* 	flex-grow: 1;  */
+	padding: 10px;
+}
+
+.hidden {
+	display: none;
+}
+
+.card-head-text {
+	font-size: 3px;
+	font-color: gray;
+}

@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.item.dao.ItemDAO">
+
+	
+	<!-- <select id="selectItemListUsingStop" resultType="kr.or.ddit.item.vo.ItemVO">
+		SELECT item_cd, item_nm, item_unit, item_cate, item_safe_qty, item_yn,
+	    item_note, it_maker, it_wght, it_color, it_mdate FROM item
+	    ORDER BY item_cd DESC
+	</select> -->
+	
+	
+	<insert id="insertItem" parameterType="kr.or.ddit.item.vo.ItemVO">
+		INSERT INTO item (item_cd, item_nm, item_unit, item_cate, item_safe_qty,
+		item_yn, item_note, it_maker, it_wght, it_color, item_inpr, item_outpr) 
+		VALUES ( #{itemCd,jdbcType=VARCHAR}, #{itemNm,jdbcType=VARCHAR}, #{itemUnit,jdbcType=VARCHAR}, 
+		#{itemCate,jdbcType=VARCHAR}, #{itemSafeQty,jdbcType=NUMERIC}, COALESCE(#{itemYn,jdbcType=VARCHAR}, 'Y'), 
+		#{itemNote,jdbcType=VARCHAR}, #{itMaker,jdbcType=VARCHAR}, #{itWght,jdbcType=VARCHAR}, 
+		#{itColor,jdbcType=VARCHAR}, #{itemInpr,jdbcType=NUMERIC}, #{itemOutpr,jdbcType=NUMERIC})
+	</insert>
+	
+	<select id="itemGroupList" resultType="kr.or.ddit.item.vo.ItemVO">
+		SELECT ITEM_CD,ITEM_NM FROM ITEM
+	</select>
+	
+	<update id="updateItem" parameterType="kr.or.ddit.item.vo.ItemVO">
+		UPDATE ITEM 
+		SET
+			item_cd = #{itemCd,jdbcType=VARCHAR},
+			item_nm =  #{itemNm,jdbcType=VARCHAR},
+			item_unit = #{itemUnit,jdbcType=VARCHAR},
+			item_cate = #{itemCate,jdbcType=VARCHAR},
+			item_safe_qty = #{itemSafeQty,jdbcType=NUMERIC},
+			item_yn =  COALESCE(#{itemYn,jdbcType=VARCHAR}, 'Y'),
+			item_note = #{itemNote,jdbcType=VARCHAR},
+			it_maker = #{itMaker,jdbcType=VARCHAR},
+			it_wght = #{itWght,jdbcType=VARCHAR},
+			it_color = #{itColor,jdbcType=VARCHAR},
+			item_inpr = #{itemInpr,jdbcType=NUMERIC},
+			item_outpr = #{itemOutpr,jdbcType=NUMERIC}
+		WHERE
+			item_cd = #{itemCd,jdbcType=VARCHAR}
+	</update>
+	
+	<update id="unUseUpdateItem" parameterType="string">
+		UPDATE ITEM
+		SET
+			item_yn = 'N'
+		WHERE 
+			item_cd = #{itemCd, jdbcType=VARCHAR}	
+	</update>
+	
+	<select id="duplicateItemCode" parameterType="kr.or.ddit.item.vo.ItemVO" resultType="int">
+		SELECT count(*) FROM ITEM WHERE item_cd = #{itemCd,jdbcType=VARCHAR}
+	</select>
+	
+	<select id="selectItem" parameterType="String" resultType="kr.or.ddit.item.vo.ItemVO">
+		SELECT
+			ITEM_CD
+			,ITEM_NM
+			,ITEM_UNIT
+			,FN_GET_COMM_CD_NM(ITEM_CATE) it_cate_nm
+			,item_cate
+			,ITEM_SAFE_QTY
+			,ITEM_YN
+			,ITEM_NOTE
+			,IT_MAKER
+			,IT_WGHT
+			,IT_COLOR
+			,ITEM_INPR
+			,ITEM_OUTPR
+			,ITEM_QTY
+		FROM
+			ITEM
+		WHERE
+			ITEM_CD = #{itemCd}
+	</select>
+	
+	
+	<sql id="searchFrag">
+	    <trim prefix="WHERE" prefixOverrides="AND">
+	        
+	        <choose>
+	            <when test="detailCondition.searchType != null and @org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.searchType)">
+	                <if test="detailCondition.searchType == 'itemCd'">
+	                    AND ITEM_CD LIKE '%' || #{detailCondition.searchWord} || '%'
+	                </if>
+	                <if test="detailCondition.searchType == 'itemNm'">
+	                    AND ITEM_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+	                </if>
+	                <if test="detailCondition.searchType == 'itemCate'">
+	                    AND FN_GET_COMM_CD_NM(ITEM_CATE) LIKE '%' || #{detailCondition.searchWord} || '%'
+	                </if>
+	            </when>
+	            <otherwise>
+	                ITEM_CD LIKE '%' || #{detailCondition.searchWord} || '%'
+	                OR
+	                ITEM_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+	                OR
+	                FN_GET_COMM_CD_NM(ITEM_CATE) LIKE '%' || #{detailCondition.searchWord} || '%'
+	            </otherwise>
+	        </choose>
+	        
+	        <choose>
+			    <when test='detailCondition.itemYn != null'>
+			        <choose>
+			            <when test='detailCondition.itemYn.equals("Y")'>
+			                AND item_yn = 'Y'
+			            </when>
+			            <when test='detailCondition.itemYn.equals("N")'>
+			                AND item_yn = 'N'
+			            </when>
+			        </choose>
+			    </when>
+			    <otherwise>
+			        AND item_yn ='Y'
+			    </otherwise>
+		</choose>
+	    </trim>
+	</sql>
+
+	<sql id="orderFrag">
+	 	<choose>
+	    	<when test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.orderFrag)">
+				ORDER BY CASE WHEN item_safe_qty >= item_qty THEN 0 ELSE 1 END, item_safe_qty DESC, item_qty ASC
+			</when>
+			<otherwise>
+			 	ORDER BY item_cd DESC
+			</otherwise>
+		</choose>
+	</sql>
+	
+	<select id="selectTotalRecord" resultType="int" parameterType="kr.or.ddit.paging.vo.PaginationInfo">
+		SELECT COUNT(*)
+		FROM
+			ITEM
+		<include refid="searchFrag"/>
+		
+	</select>
+	
+	<select id="selectItemList" parameterType="kr.or.ddit.paging.vo.PaginationInfo" resultType="ItemVO">
+		    WITH ITEMLIST AS(
+				SELECT ROWNUM RNUM, A.*
+				FROM(
+					SELECT
+						item_cd, item_nm, item_unit, FN_GET_COMM_CD_NM(item_cate) as it_cate_nm,item_cate, item_safe_qty, COALESCE(item_yn, 'Y') AS item_yn,
+	                    item_note, it_maker, it_color, it_wght, item_qty, item_inpr,item_outpr
+					FROM item
+         	       <include refid="searchFrag" />
+             	   <include refid="orderFrag" />
+				) A
+				<!-- where item_yn = 'Y' -->
+			)
+			SELECT *
+			FROM ITEMLIST
+			WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+	<select id="selectItemListDataTable" parameterType="kr.or.ddit.storage.vo.StorageVO" resultType="kr.or.ddit.item.vo.ItemVO">
+
+		SELECT
+			i.item_cd
+			, i.item_nm
+			, i.item_unit
+			, FN_GET_COMM_CD_NM(i.item_cate) as	it_cate_nm
+			, i.item_cate
+			, i.item_safe_qty
+			, COALESCE(i.item_yn, 'Y') AS item_yn
+			, i.item_note
+			, i.it_maker
+			, i.it_color
+			, i.it_wght
+			, i.item_qty
+			, i.item_inpr
+			, i.item_outpr
+		FROM item i
+			JOIN item_ware on i.item_cd = item_ware.item_cd
+		WHERE item_ware.ware_cd = #{wareCd} and item_ware.sec_cd2 = #{secCd}
+		ORDER BY item_cd DESC
+		
+	</select>
+	
+	
+<!-- 	<select id="">
+		SELECT *
+		FROM ITEM A
+		WHERE A.ITEM_CD IN 
+		<foreach collection="list" item="itemCd" open="(" close=")" separator=",">
+			#{itemCd}
+		</foreach>
+	</select> -->
+	<update id="useUpdateItem" parameterType="string">
+		UPDATE item
+		SET
+			ITEM_YN = 'Y'
+		WHERE 
+			ITEM_CD = #{itemCd, jdbcType=VARCHAR}	
+	</update>
+	
+	
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

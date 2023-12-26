@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.storage.dao.SectorDAO">
+
+	<resultMap type="kr.or.ddit.storage.vo.SectorVO" id="secMap" autoMapping="true">
+		<id property="secCd" column="SEC_CD"/>
+			<collection property="itemWareList" ofType="kr.or.ddit.storage.vo.ItemWareVO" autoMapping="true">
+				<association property="itemVO" autoMapping="true"/>
+			</collection>
+	</resultMap>	
+
+	<select id="selectSectorItemList" parameterType="kr.or.ddit.storage.vo.WareSecVO" resultMap="secMap">
+	  	SELECT
+		    a.item_cd,
+            a.ware_cd,
+            a.sec_cd2,
+            a.ware_qty,
+            b.item_nm,
+            FN_GET_COMM_CD_NM(b.item_cate) as item_cate,
+		    b.item_safe_qty,
+		    b.item_note
+		FROM
+            item_ware a
+		INNER JOIN
+		    item b ON a.item_cd = b.item_cd
+		where     
+            a.ware_cd=#{wareCd} and a.sec_cd2=#{secCd}
+	</select>
+	            
+	<select id="selectSectorItemsList" parameterType="kr.or.ddit.storage.vo.WareSecVO" resultMap="secMap">
+	  	SELECT
+		    a.item_cd,
+            a.ware_cd,
+            a.sec_cd2 as sec_cd,
+            a.ware_qty,
+            b.item_nm,
+            b.item_cate,
+		    b.item_safe_qty,
+		    b.item_note
+		FROM
+            item_ware a
+		INNER JOIN
+		    item b ON a.item_cd = b.item_cd
+		where     
+            a.ware_cd=#{wareCd}
+	</select>
+	
+	<!--  
+	<insert id="insertWareSector" parameterType="java.util.List">
+		<foreach collection="list" item="item" open="INSERT ALL" close="SELECT * FROM DUAL" separator=" ">
+	        INTO WARE_SEC VALUES (
+	            #{item.wareCd}, #{item.secCd}, #{item.wsecX1}, #{item.wsecY1},
+	            #{item.wsecZ}, #{item.wsecX2}, #{item.wsecY2}
+	        )
+	    </foreach>
+	</insert>-->
+
+	<!-- Sector 업데이트 -->
+    <update id="updateWareSector" parameterType="WareSecVO">
+	     UPDATE WARE_SEC
+	     SET
+	         WSEC_X1 = #{wsecX1},
+	         WSEC_Y1 = #{wsecY1},
+	         WSEC_Z = #{wsecZ},
+	         WSEC_X2 = #{wsecX2},
+	         WSEC_Y2 = #{wsecY2}
+	     WHERE
+	         WARE_CD = #{wareCd} AND SEC_CD = #{secCd}
+    </update>
+
+    <!-- DB에 SELECT했을 때 없을 때만 INSERT가 삽입됨 -->
+    <insert id="insertWareSector" parameterType="WareSecVO">
+     INSERT INTO WARE_SEC
+     SELECT
+         #{wareCd}, #{secCd}, #{wsecX1}, #{wsecY1},
+      	#{wsecZ}, #{wsecX2}, #{wsecY2}
+     FROM DUAL
+     WHERE NOT EXISTS (
+         SELECT 1
+         FROM WARE_SEC
+         WHERE WARE_CD = #{wareCd} AND SEC_CD = #{secCd}
+     )
+    </insert>
+    
+    <update id="mergeItemWare" parameterType="ItemWareVO">
+	    MERGE INTO 
+	    	item_ware 
+		USING DUAL 
+		ON 
+			(trim(item_cd) = #{itemCd} AND trim(ware_cd) = #{wareCd} AND trim(sec_cd2) = #{secCd2})
+		WHEN MATCHED THEN 
+		UPDATE SET 
+		        ware_qty = ware_qty + #{wareQty}
+		WHEN NOT MATCHED THEN 
+	    INSERT 
+	    	(item_cd, ware_cd, sec_cd2, ware_qty) 
+	    VALUES 
+	    	(#{itemCd}, #{wareCd}, #{secCd2}, #{wareQty})
+    </update>
+    
+    <delete id="removeWareSector" parameterType="WareSecVO">
+    	DELETE FROM 
+    		ware_sec
+		WHERE
+			WARE_CD = #{wareCd} AND SEC_CD = #{secCd}
+    </delete>
+    
+    <delete id="removeItemWare" parameterType="InventoryReceiptPaymentVO">
+    	DELETE FROM
+    		item_ware
+    	WHERE
+    		ITEM_CD = #{itemCd} AND WARE_CD = #{wareCd} AND SEC_CD2 = #{secCd2}
+    </delete>
+</mapper>

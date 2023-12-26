@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.storage.dao.StorageDAO">
+	
+	
+	<!-- <sql id="searchFrag">
+		<trim prefix="WHERE" prefixOverrides="AND">
+			<if test=" neq null">
+				
+			</if>
+		</trim>
+	</sql> -->
+
+	<select id="selectStorageList" resultType="kr.or.ddit.storage.vo.StorageVO">
+			SELECT
+			    a.ware_cd, a.ware_nm, a.ware_item,
+			    a.ware_width, a.ware_y, a.emp_cd,b.emp_nm,
+			    a.ware_latitude, a.ware_longitude,
+			    a.ware_addr, a.ware_addr_detail,
+			    a.ware_zip, a.ware_temp
+			FROM
+			    WARE a
+			    inner join emp b on(a.emp_cd = b.emp_cd)
+			ORDER BY 
+			    a.ware_cd DESC
+	</select>
+	
+	
+	<select id="selectStorageSecList" resultType="hashMap">
+			SELECT
+			    a.ware_cd "wareCd", a.ware_nm "wareNm", a.ware_item "wareItem",
+			    a.ware_width "wareWidth", a.ware_y "wareY", a.emp_cd "empCd", a.ware_latitude "wareLatitude",
+			    a.ware_longitude "wareLongitude", a.ware_addr "wareAddr", a.ware_addr_detail "wareAddrDetail",
+			    a.ware_zip "wareZip",a.ware_temp "wareTemp",b.sec_cd "secCd",c.emp_nm "empNm"
+			FROM
+			    WARE a left outer join ware_sec b on(a.ware_cd = b.ware_cd)
+			           inner join EMP c on(a.emp_cd =c.emp_cd) 
+			WHERE
+			    a.ware_temp = 'Y'
+			ORDER BY 
+			    a.ware_cd
+	</select>
+	
+	
+	
+	<!-- 창고별 구역별 공간별 품목 등록할떄 쓰는 resultMap -->
+	<resultMap type="kr.or.ddit.storage.vo.StorageVO" id="storMap" autoMapping="true">
+		<id property="wareCd" column="WARE_CD"/>
+		<collection property="wareSecList" ofType="kr.or.ddit.storage.vo.WareSecVO" autoMapping="true">
+			<collection property="itemWareList" ofType="kr.or.ddit.storage.vo.ItemWareVO" autoMapping="true"/>
+		</collection>
+	</resultMap>
+	
+	
+	<!-- 창고 검색 및 섹터 조회용 -->
+	<select id="selectStorageSectorList" resultMap="storMap" parameterType="string">
+	       SELECT
+		       A.ware_cd, A.ware_nm, A.ware_item,
+		        A.ware_width, A.ware_y, A.emp_cd, A.ware_latitude,
+		        A.ware_longitude, A.ware_addr, A.ware_addr_detail,
+		        A.ware_zip,A.ware_temp,B.sec_cd,B.wsec_x1,B.wsec_y1,B.wsec_z,B.wsec_x2,B.wsec_y2
+		    FROM
+		        WARE A INNER JOIN WARE_SEC B ON (A.WARE_CD = B.WARE_CD)
+		    WHERE
+		        A.ware_temp = 'Y' AND A.ware_cd =#{wareCd}
+		    ORDER BY 
+		        ware_cd DESC
+	</select>
+	
+	
+	<insert id="insertStorage" parameterType="kr.or.ddit.storage.vo.StorageVO" >
+	  	<selectKey keyProperty="wareCd" resultType="string" order="BEFORE">
+		   	SELECT 'W'||LPAD(NVL(MAX(TO_NUMBER(SUBSTR(WARE_CD, 2, 5))),0)+1,3,0)
+			FROM WARE
+		</selectKey>
+		INSERT INTO ware (
+    		ware_cd,
+		    ware_nm,
+		    ware_item,
+		    ware_width,
+		    ware_y,
+		    emp_cd,
+		    ware_latitude,
+		    ware_longitude,
+		    ware_addr,
+		    ware_addr_detail,
+		    ware_zip,
+		    ware_temp
+		) VALUES (
+		     #{wareCd, jdbcType=VARCHAR}
+			, #{wareNm,jdbcType=VARCHAR}
+			, #{wareItem,jdbcType=VARCHAR}
+			, #{wareWidth,jdbcType=NUMERIC}
+			, #{wareY,jdbcType=NUMERIC}
+			, #{empCd,jdbcType=VARCHAR}
+			, #{wareLatitude,jdbcType=VARCHAR}
+			, #{wareLongitude,jdbcType=VARCHAR}
+			, #{wareAddr,jdbcType=VARCHAR}
+			, #{wareAddrDetail,jdbcType=VARCHAR}
+			, #{wareZip,jdbcType=VARCHAR}
+			,'Y'
+		)
+	</insert>
+	
+	<update id="updateStorage" parameterType="kr.or.ddit.storage.vo.StorageVO">
+	UPDATE ware
+		SET
+			ware_nm = #{wareNm,jdbcType=VARCHAR}
+			, ware_item = #{wareItem,jdbcType=VARCHAR}
+			, ware_width = #{wareWidth,jdbcType=NUMERIC}
+			, ware_y = #{wareY,jdbcType=NUMERIC}
+			, emp_cd = #{empCd,jdbcType=VARCHAR}
+			, ware_latitude = #{wareLatitude,jdbcType=VARCHAR}
+			, ware_longitude = #{wareLongitude,jdbcType=VARCHAR}
+			, ware_addr = #{wareAddr,jdbcType=VARCHAR}
+			, ware_addr_detail= #{wareAddrDetail,jdbcType=VARCHAR}
+			, ware_zip = #{wareZip,jdbcType=VARCHAR}
+		WHERE
+			ware_cd = #{wareCd, jdbcType=VARCHAR}
+		    
+	</update>
+	
+	<update id="unUseUpdateStorage" parameterType="string">
+		UPDATE ware
+		SET
+			WARE_TEMP = 'N'
+		WHERE 
+			WARE_CD = #{wareCd, jdbcType=VARCHAR}	
+	</update>
+	
+	<update id="useUpdateStorage" parameterType="string">
+		UPDATE ware
+		SET
+			WARE_TEMP = 'Y'
+		WHERE 
+			WARE_CD = #{wareCd, jdbcType=VARCHAR}	
+	</update>
+</mapper>

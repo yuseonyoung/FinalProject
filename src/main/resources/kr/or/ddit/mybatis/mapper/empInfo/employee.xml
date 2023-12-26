@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.empInfo.dao.EmployeeDao">
+
+	<!-- 사용자 목록 조회 -->
+	<select id="list" parameterType="String" resultMap="empInfoMap">
+		SELECT
+			  A.EMP_CD
+			, A.EMP_PW
+			, A.EMP_NM
+			, A.EMP_BIRTH
+			, A.EMP_IMG
+			, A.EMP_SIGN
+			, A.EMP_TEL_NO
+			, A.EMP_MAIL
+			, A.EMP_USE
+			, A.MSG_STAT
+			, C.DEPT_NO
+			, C.HR_GRADE
+			, C.HR_CHARGE
+			, FN_GET_COMM_CD_NM(A.MSG_STAT) AS MSG_STAT_NM
+			, FN_GET_DEPT_NO_NM(C.DEPT_NO) AS DEPT_NM
+			, FN_GET_COMM_CD_NM(C.HR_GRADE) AS HR_GRADE_NM
+			, FN_GET_COMM_CD_NM(C.HR_CHARGE) AS HR_CHARGE_NM
+		FROM
+		    EMP A
+	    INNER JOIN
+		    HR_INFO C ON A.EMP_CD = C.EMP_CD
+    	ORDER BY A.EMP_CD DESC
+	</select>
+
+	<resultMap type="kr.or.ddit.empInfo.vo.EmpInfoVO" id="empInfoMap">
+	   <result property="empCd" column="EMP_CD" />
+	   <result property="empPw" column="EMP_PW" />
+	   <result property="empNm" column="EMP_NM" />
+	   <result property="empTelNo" column="EMP_TEL_NO" />
+	   <result property="empMail" column="EMP_MAIL" />
+	   <result property="empBirth" column="EMP_BIRTH" />
+	   <result property="empZip" column="EMP_ZIP" />
+	   <result property="empAddr" column="EMP_ADDR" />
+	   <result property="empDaddr" column="EMP_DADDR" />
+	   <result property="empImg" column="EMP_IMG" />
+	   <result property="empSign" column="EMP_SIGN" />
+	   <result property="empGend" column="EMP_GEND" />
+	   <result property="msgStat" column="MSG_STAT" />
+	   <result property="empUse" column="EMP_USE" />
+	   
+	   <result property="deptNo" column="DEPT_NO" />
+	   <result property="hrGrade" column="HR_GRADE" />
+	   <result property="hrGradeNm" column="HR_GRADE_NM" />
+	   <result property="hrCharge" column="HR_CHARGE" />
+	   <result property="hrChargeNm" column="HR_CHARGE_NM" />
+	   <result property="hrSal" column="HR_SAL" />
+	   <result property="hrBank" column="HR_BANK" />
+	   <result property="hrBankNo" column="HR_BANK_NO" />
+	   <result property="hrSdate" column="HR_SDATE" />
+	   <result property="hrEdate" column="HR_EDATE" />
+	   <result property="hrStat" column="HR_STAT" />
+	   <result property="hrStatNm" column="HR_STAT_NM" />
+	   <result property="hrMilYn" column="HR_MIL_YN" />
+	   <result property="hrMilYnNm" column="HR_MIL_YN_NM" />
+	   
+	   <result property="deptNm" column="DEPT_NM" />
+	</resultMap>
+
+	<!-- user정보 조회, 권한정보 포함 -->
+	<select id="detailEmp" parameterType="kr.or.ddit.empInfo.vo.EmpRegisterVO" resultMap="empInfoMap">
+		SELECT
+			  A.EMP_CD
+			, A.EMP_PW
+			, A.EMP_NM
+			, A.EMP_BIRTH
+			, A.EMP_IMG
+			, A.EMP_SIGN
+			, A.EMP_TEL_NO
+			, A.EMP_MAIL
+			, A.EMP_ZIP
+			, A.EMP_ADDR
+			, A.EMP_DADDR
+			, A.EMP_USE
+			, A.MSG_STAT
+			, A.EMP_GEND
+			, C.DEPT_NO
+			, C.HR_GRADE
+			, C.HR_CHARGE
+			, C.HR_SAL
+			, C.HR_BANK_NO
+			, C.HR_BANK
+			, C.HR_SDATE
+			, C.HR_EDATE
+			, C.HR_STAT
+			, C.HR_MIL_YN
+			, FN_GET_COMM_CD_NM(A.MSG_STAT) AS MSG_STAT_NM
+			, FN_GET_DEPT_NO_NM(C.DEPT_NO) AS DEPT_NM
+			, FN_GET_COMM_CD_NM(C.HR_GRADE) AS HR_GRADE_NM
+			, FN_GET_COMM_CD_NM(C.HR_CHARGE) AS HR_CHARGE_NM
+		    , FN_GET_COMM_CD_NM(C.HR_STAT) AS HR_STAT_NM
+		    , FN_GET_COMM_CD_NM(C.HR_MIL_YN) AS HR_MIL_YN_NM
+		FROM
+		    EMP A
+	    INNER JOIN
+		    HR_INFO C ON A.EMP_CD = C.EMP_CD
+        WHERE A.EMP_CD = #{empCd}
+	</select>
+
+
+	<!-- user정보 조회 -->
+	<select id="detail" parameterType="kr.or.ddit.empInfo.vo.EmpInfoVO" resultType="kr.or.ddit.empInfo.vo.EmpInfoVO">
+		SELECT
+		    EMP_CD
+		  , EMP_PW
+		  , EMP_NM
+		  , EMP_TEL_NO
+		  , EMP_MAIL
+		  , EMP_BIRTH
+		  , EMP_ZIP
+		  , EMP_ADDR
+		  , EMP_DADDR
+		  , EMP_IMG
+		  , EMP_SIGN
+		  , EMP_GEND
+		  , MSG_STAT
+		  , EMP_USE
+		FROM
+		    EMP
+		WHERE EMP_CD = #{empCd}
+	</select>
+
+	<!-- empCd 자동생성 값 조건 조회 -->
+	<select id="maxEmpCd" parameterType="String" resultType="String">
+		SELECT
+		    MAX(EMP_CD)
+		FROM
+		    EMP
+		WHERE EMP_CD LIKE #{search}
+	</select>
+
+	<!-- email 중복 체크 -->
+	<select id="checkEmail" parameterType="String" resultType="int">
+		SELECT
+		    COUNT(EMP_MAIL)
+		FROM
+		    EMP
+		WHERE
+		    EMP_MAIL = #{email}
+	</select>
+
+	<insert id="createEmp" parameterType="kr.or.ddit.empInfo.vo.EmpRegisterVO">
+		INSERT INTO EMP (
+		    EMP_CD
+		  , EMP_PW
+		  , EMP_NM
+		  , EMP_TEL_NO
+		  , EMP_MAIL
+		  , EMP_BIRTH
+		  , EMP_ZIP
+		  , EMP_ADDR
+		  , EMP_DADDR
+		  , EMP_GEND
+		  , MSG_STAT
+		  , EMP_USE
+		) VALUES (
+		    #{empCd}
+		  , #{empPw}
+		  , #{empNm}
+		  , #{empTelNo}
+		  , #{empMail}
+		  , #{empBirth}
+		  , #{empZip}
+		  , #{empAddr}
+		  , #{empDaddr}
+		  , #{empGend}
+		  , 'Q004'
+		  , 1
+		)
+	</insert>
+
+	<insert id="createEmpInfo" parameterType="kr.or.ddit.empInfo.vo.EmpRegisterVO">
+		INSERT INTO HR_INFO (
+			EMP_CD
+		  , DEPT_NO
+		  , HR_GRADE
+		  , HR_CHARGE
+		  , HR_SAL
+		  , HR_BANK
+		  , HR_BANK_NO
+		  , HR_SDATE
+		  , HR_STAT
+		  , HR_MIL_YN
+		) VALUES (
+			#{empCd}
+		  , #{deptNo}
+   		  , #{hrGrade}
+		  , #{hrCharge}
+		  , #{hrSal}
+		  , #{hrBank}
+		  , #{hrBankNo}
+		  , #{hrSdate}
+		  , 'J001'
+		  , #{hrMilYn}
+		)
+	</insert>
+
+
+	<update id="updateEmp" parameterType="kr.or.ddit.empInfo.vo.EmpInfoVO">
+		UPDATE EMP
+		    SET
+		        EMP_TEL_NO = #{empTelNo}
+		      , EMP_MAIL = #{empMail}
+		      , EMP_ZIP = #{empZip}
+		      , EMP_ADDR = #{empAddr}
+		      , EMP_DADDR = #{empDaddr}
+		WHERE
+		    EMP_CD = #{empCd}
+	</update>
+
+	<update id="updateEmpInfo" parameterType="kr.or.ddit.empInfo.vo.EmpInfoVO">
+		UPDATE HR_INFO
+		    SET
+		        DEPT_NO = #{deptNo}
+		      , HR_GRADE = #{hrGrade}
+		      , HR_CHARGE = #{hrCharge}
+		      , HR_SAL = #{hrSal}
+		      , HR_BANK = #{hrBank}
+		      , HR_BANK_NO = #{hrBankNo}
+		      , HR_MIL_YN = #{hrMilYn}
+		WHERE
+		    EMP_CD = #{empCd}
+	</update>
+
+	
+	<!-- 로그 목록 -->
+	<select id="logList" resultType="kr.or.ddit.empInfo.vo.LogRecVO">
+		SELECT
+			A.LOG_NO
+			, A.EMP_CD
+			, A.LOG_STAT
+			, A.LOG_DATE
+			, A.LOG_IP
+			, A.LOG_NAT
+			, B.EMP_NM
+		FROM
+			LOG A
+		INNER JOIN EMP B ON A.EMP_CD = B.EMP_CD
+		ORDER BY A.LOG_NO DESC
+	</select>
+	
+	<insert id="userLog" parameterType="kr.or.ddit.empInfo.vo.LogRecVO">
+		INSERT INTO LOG (
+			 LOG_NO
+			, EMP_CD
+			, LOG_STAT
+			, LOG_IP
+			, LOG_NAT
+			)
+		VALUES(
+		 SEQ_LOG.NEXTVAL
+		, #{empCd}
+		, #{logStat}
+		, #{logIp}
+		, #{logNat}
+		)
+	</insert>
+
+	<update id="logSuccessZero" parameterType="String">
+		UPDATE
+			EMP
+		SET
+			FAIL_CNT = 0
+		WHERE
+			EMP_CD = #{empCd}
+	</update>
+
+
+	<update id="logFailCntUp" parameterType="String">
+		UPDATE
+			EMP
+		SET
+			 FAIL_CNT = FAIL_CNT + 1
+		WHERE
+			EMP_CD = #{empCd}
+	</update>
+
+	<select id="checkCntUp" parameterType="String" resultType="int">
+		SELECT
+			 FAIL_CNT
+		FROM
+			EMP
+		WHERE
+			EMP_CD = #{empCd}
+	</select>
+
+	<!-- 사용자 계정 존재 여부 확인 -->
+	<select id="checkId" parameterType="String" resultType="int">
+		SELECT
+			COUNT(EMP_CD)
+		FROM
+			EMP
+		WHERE
+			EMP_CD = #{empCd}
+	</select>
+
+	<!-- 사용자 계정 활성화 여부 확인 -->
+	<select id="checkIdEn" parameterType="String" resultType="String">
+		SELECT
+		    EMP_USE
+		FROM
+		    EMP
+		WHERE EMP_CD = #{empCd}
+	</select>
+
+	<!-- 계정에 등록된 이메일 확인 -->
+	<select id="checkEmlId" parameterType="String" resultType="String">
+		SELECT
+			 EMP_MAIL
+		FROM
+			EMP
+		WHERE EMP_CD = #{empCd}
+	</select>
+
+
+</mapper>

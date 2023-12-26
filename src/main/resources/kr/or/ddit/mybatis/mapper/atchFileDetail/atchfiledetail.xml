@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.util.commcode.dao.AtchFileDetailDao">
+
+<!-- ATCH_FILE_DETAIL 테이블에 insert
+	public int insertAtchFileDetail(AtchFileDetailVO atchFileDetailVO) -->
+<insert id="insertAtchFileDetail" parameterType="AtchFileDetailVO">
+	INSERT INTO ATCH_FILE_DETAIL(ATCH_FILE_ID, FILE_SN, FILE_STRE_COURS, STRE_FILE_NM, ORIGNL_FILE_NM, FILE_EXTSN, FILE_CN, FILE_SIZE)
+	VALUES(#{atchFileId}, 
+		(SELECT NVL(MAX(FILE_SN),0)+1 FROM ATCH_FILE_DETAIL WHERE ATCH_FILE_ID = #{atchFileId}), 
+		#{fileStreCours}, #{streFileNm}, #{orignlFileNm}
+		 , #{fileExtsn}, #{fileCn}, #{fileSize})
+</insert>
+
+<!-- ATCH_BRD_FILE_DETAIL 테이블에 insert
+	-->
+<insert id="insertAtchBrdFileDetail" parameterType="kr.or.ddit.board.vo.AtchBrdFileDetailVO">
+	INSERT INTO ATCH_BRD_FILE_DETAIL(ATCH_FILE_ID, FILE_SN, FILE_STRE_COURS, STRE_FILE_NM, ORIGNL_FILE_NM, FILE_EXTSN, FILE_CN, FILE_SIZE)
+	VALUES(#{atchFileId}, 
+			(SELECT NVL(MAX(FILE_SN),0)+1 FROM ATCH_BRD_FILE_DETAIL WHERE ATCH_FILE_ID = #{atchFileId}), 
+			#{fileStreCours}, #{streFileNm}, #{orignlFileNm}
+		 , #{fileExtsn}, #{fileCn}, #{fileSize})
+</insert>
+
+
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

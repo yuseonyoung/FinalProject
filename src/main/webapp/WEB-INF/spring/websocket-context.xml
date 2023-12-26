@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- [[개정이력(Modification Information)]] -->
+<!-- 수정일 수정자 수정내용 -->
+<!-- ========== ====== ============== -->
+<!-- 2023. 12. 01.} 우정범 최초작성 -->
+<!-- 2023. 12. 03.} 이수정 핸들러 매핑 -->
+<!-- Copyright (c) 2023 by DDIT All right reserved -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:websocket="http://www.springframework.org/schema/websocket"
+	xsi:schemaLocation="http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket-4.3.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<bean id="alarmHandler"  class="kr.or.ddit.websocket.handler.CustomWebSocketHandler" />
+	<websocket:handlers allowed-origins="*">
+		<websocket:mapping handler="alarmHandler" path="/alarm" />
+		<websocket:mapping handler="alarmHandler" path="/mail" />
+		<websocket:mapping handler="alarmHandler" path="/purOrdReq" />
+		<websocket:mapping handler="alarmHandler" path="/storIn" />
+		<websocket:mapping handler="alarmHandler" path="/draft" />
+		
+		<websocket:handshake-interceptors>
+			<bean class="org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor" />
+		</websocket:handshake-interceptors>
+	</websocket:handlers>
+	
+</beans>

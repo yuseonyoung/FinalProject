@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.order.dao.OrderUnitPriceDAO">
+	
+	<!-- 신규 단가요청서 등록 -->
+	<insert id="insertUnitPrice" parameterType="kr.or.ddit.order.vo.OrderUnitPriceVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="upreqCd">
+			select 'UR'||LPAD((NVL(MAX(TO_NUMBER(SUBSTR(UPREQ_CD, 3, 5))), 0)+1),5,'0') 
+			  from UPRC_REQ
+		</selectKey>
+		   INSERT INTO uprc_req (
+								    upreq_cd,
+								    upreq_date,
+								    upreq_stat,
+								    upreq_val_date,
+								    emp_cd,
+								    pplan_cd
+								) VALUES (
+								    #{upreqCd},
+								    #{upreqDate},
+								    'T001',
+								    #{upreqValDate},
+								    #{empCd},
+								    #{pplanCd}
+								)
+	</insert>
+	
+	<!-- 신규 단가요청서 등록 -->
+	<insert id="insertUnitPriceItem" parameterType="kr.or.ddit.order.vo.OrderUnitPriceItemVO">
+		<selectKey order="BEFORE" resultType="hashMap" keyProperty="uprcItCd,upreqCd">
+			select              
+				(select 'URI'||LPAD((NVL(MAX(TO_NUMBER(SUBSTR(UPRC_IT_CD, 4, 5))), 0)+1),5,'0') 
+						  from UPRC_REQ_ITEM) "uprcItCd"
+			              
+			 	,(select 'UR'||LPAD((NVL(MAX(TO_NUMBER(SUBSTR(UPREQ_CD, 3, 5))), 0)),5,'0') 
+						  from UPRC_REQ) "upreqCd"              
+			from dual
+		</selectKey>
+		  INSERT INTO uprc_req_item (
+									    uprc_it_cd,
+									    upreq_cd,
+									    item_cd,
+									    uprc_it_qty,
+									    upreq_dur
+									) VALUES (
+									    #{uprcItCd},
+									    #{upreqCd},
+									    #{itemCd},
+									    #{uprcItQty},
+									    #{upreqDur, jdbcType=VARCHAR}
+									)
+	</insert>
+	
+	<!-- 단가요청서 리스트 뽑기 -->
+	<resultMap type="kr.or.ddit.order.vo.OrderUnitPriceVO" id="orderUnitPriceMap" autoMapping="true">
+		<id property="upreqCd" column="UPREQ_CD" />
+		<collection property="orderUnitPriceItem" ofType="kr.or.ddit.order.vo.OrderUnitPriceItemVO" autoMapping="true">
+			<association property="item" javaType="kr.or.ddit.item.vo.ItemVO" autoMapping="true"/>
+		</collection>
+	</resultMap>
+	<select id="selectOrderUnitPriceList" parameterType="string" resultMap="orderUnitPriceMap">
+		select 
+		    ur.upreq_cd 
+		    , item.item_nm 
+		    , ur.upreq_date 
+		    , ur.upreq_val_date 
+            , (select count(*) from uprc_req_item where uprc_req_item.upreq_cd= ur.upreq_cd)-1 nQty
+		    , FN_GET_COMM_CD_NM(ur.upreq_stat) "UPREQ_STAT"
+		  from uprc_req ur
+		left outer join uprc_req_item uri
+		             on ur.upreq_cd=uri.upreq_cd
+		left outer join item item
+		             on item.item_cd=uri.item_cd
+	</select>
+	
+	<select id="selectOrderUnitPriceDetailList" parameterType="string" resultType="hashMap">
+		select 
+			ur.upreq_cd "upreqCd"
+			, ur.upreq_date "upreqDate"
+			, FN_GET_COMM_CD_NM(ur.upreq_stat) "upreqStat"
+			, ur.upreq_val_date "upreqValDate"
+			, uri.upreq_dur "upreqDur"
+			, emp.emp_nm "empNm"
+			, ur.emp_cd "empCd"
+			, ur.pplan_cd "pplanCd"
+			, uri.item_cd "itemCd"
+			, item.item_nm "itemNm"
+			, uri.uprc_it_qty "uprcItQty"
+			, uri.uprc_it_cd "uprcItCd"
+		  from uprc_req ur
+		  
+		left outer join uprc_req_item uri
+			on ur.upreq_cd=uri.upreq_cd
+		
+		left outer join item item
+			on item.item_cd=uri.item_cd
+		
+		left outer join pur_ord_plan pop
+			on pop.pplan_cd=ur.pplan_cd
+		
+		left outer join emp emp
+			on emp.emp_cd=ur.emp_cd
+			
+		where 
+			ur.upreq_cd=#{upreqCd}
+	</select>
+	<select id="selectOrderUnitPriceDetailList1" parameterType="string" resultType="hashMap">
+		select 
+			ur.upreq_cd "upreqCd"
+			, ur.upreq_date "upreqDate"
+			, FN_GET_COMM_CD_NM(ur.upreq_stat) "upreqStat"
+			, ur.upreq_val_date "upreqValDate"
+			, uri.upreq_dur "upreqDur"
+			, emp.emp_nm "empNm"
+			, ur.emp_cd "empCd"
+			, ur.pplan_cd "pplanCd"
+			, uri.item_cd "itemCd"
+			, item.item_nm "itemNm"
+			, uri.uprc_it_qty "uprcItQty"
+			, uri.uprc_it_cd "uprcItCd"
+		  from uprc_req ur
+		  
+		left outer join uprc_req_item uri
+			on ur.upreq_cd=uri.upreq_cd
+		
+		left outer join item item
+			on item.item_cd=uri.item_cd
+		
+		left outer join pur_ord_plan pop
+			on pop.pplan_cd=ur.pplan_cd
+		
+		left outer join emp emp
+			on emp.emp_cd=ur.emp_cd
+			
+		where 
+			ur.upreq_cd=#{upreqCd}
+	</select>
+	
+	<!-- 신규 발주계획서 등록시 단가요청서에서 진행상태가 완료되는 update문 -->
+	<update id="updateOrderUnitPrice" parameterType="string">
+		UPDATE uprc_req
+		SET
+		    upreq_stat = 'T002'
+		WHERE
+		        upreq_cd = #{upreqCd}
+	</update>
+	
+	<update id="modifyOrderUnitPrice" parameterType="string">
+		
+	</update>
+	<update id="modifyOrderUnitPriceItem" parameterType="map">
+		UPDATE 
+				uprc_req_item
+		   SET
+			    uprc_it_qty = #{uprcItQty, jdbcType=INTEGER},
+			    upreq_dur = #{upreqDur}
+	     WHERE
+			    uprc_it_cd=#{uprcItCd, jdbcType=VARCHAR}
+	</update>
+	
+	
+	
+	
+	<sql id="searchFrag">
+        <where>
+        
+            <if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+                <choose>
+                    <when test="simpleCondition.searchType eq 'upreqCd'">
+                        INSTR(ur.upreq_cd, #{simpleCondition.searchWord}) > 0
+                    </when>
+                    <when test="simpleCondition.searchType eq 'itemNm'">
+                        INSTR(item.item_nm, #{simpleCondition.searchWord}) > 0
+                    </when>
+                    <when test="simpleCondition.searchType eq 'empNm'">
+                        INSTR(emp.emp_nm, #{simpleCondition.searchWord}) > 0
+                    </when>
+                    <otherwise>
+                        INSTR(ur.upreq_cd, #{simpleCondition.searchWord}) > 0
+                        OR
+                        INSTR(item.item_nm, #{simpleCondition.searchWord}) > 0
+                        OR
+                        INSTR(emp.emp_nm, #{simpleCondition.searchWord}) > 0
+                    </otherwise>
+                </choose>
+            </if>
+            
+        </where>
+    </sql>
+    <select id="selectTotalRecord" parameterType="kr.or.ddit.paging.vo.PaginationInfo" resultType="int">
+       SELECT COUNT(*)
+		  FROM(        
+		    SELECT upreq_cd_alias
+		      FROM (
+		         select ur.upreq_cd AS upreq_cd_alias, item.* from uprc_req ur
+                 inner join uprc_req_item uri on ur.upreq_cd=uri.upreq_cd
+                 INNER JOIN item item ON uri.item_cd = item.item_cd
+                 INNER JOIN emp on emp.emp_cd=ur.emp_cd
+		         <include refid="searchFrag" />
+		        )
+		group by upreq_cd_alias
+		)
+    </select>
+    <select id="selectOrderUnitPriceList2" parameterType="kr.or.ddit.paging.vo.PaginationInfo" resultMap="orderUnitPriceMap">
+    
+		SELECT UR.*
+		FROM (
+		    SELECT A.*, ROWNUM AS rnum
+		    FROM (
+		        SELECT 
+				    ur.upreq_cd,
+				    ur.upreq_date,
+				    ur.upreq_val_date,
+				    MIN(item.item_nm) AS "item.item_nm",
+				    MIN(item.item_cd) AS "item.item_cd",
+				    emp.emp_nm,
+				    (select count(*) from uprc_req_item where uprc_req_item.upreq_cd= ur.upreq_cd)-1 nQty,
+				    FN_GET_COMM_CD_NM(ur.upreq_stat) AS upreqStat
+				FROM uprc_req ur
+				INNER JOIN uprc_req_item uri ON ur.upreq_cd = uri.upreq_cd
+				INNER JOIN item ON uri.item_cd = item.item_cd
+				INNER JOIN emp ON emp.emp_cd = ur.emp_cd
+				<include refid="searchFrag" />
+				GROUP BY 
+				    ur.upreq_cd,
+				    ur.upreq_date,
+				    ur.upreq_val_date,
+				    emp.emp_nm,
+				    ur.upreq_stat
+				ORDER BY ur.upreq_date DESC
+		    ) A
+		) UR
+		<![CDATA[ WHERE RNUM >= #{startRow} AND RNUM <= #{endRow} ]]>
+		ORDER BY UR.rnum
+    
+    
+    
+    
+   
+				                       
+	</select>
+	
+	<insert id="insertUnitPriceOne" parameterType="kr.or.ddit.order.vo.ComQteVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="cqteCd">
+			select 'CQ'||LPAD((NVL(MAX(TO_NUMBER(SUBSTR(CQTE_CD, 3, 5))), 0)+1),5,'0') 
+			  from COM_QTE
+		</selectKey>
+		INSERT INTO com_qte (
+						    cqte_cd,
+						    upreq_cd,
+						    com_cd
+						) VALUES (
+						    #{cqteCd},
+						    #{upreqCd},
+						    #{comCd}
+						)
+		
+	
+	</insert>
+	
+	<insert id="insertUnitPriceItemOne" parameterType="kr.or.ddit.order.vo.ComQteItemVO">
+		<selectKey order="BEFORE" resultType="hashMap" keyProperty="cqteItCd,cqteCd">
+			select              
+				(select 'CQI'||LPAD((NVL(MAX(TO_NUMBER(SUBSTR(CQTE_IT_CD, 4, 5))), 0)+1),5,'0') 
+						  from COM_QTE_ITEM) "cqteItCd"
+			              
+			 	,(select 'CQ'||LPAD((NVL(MAX(TO_NUMBER(SUBSTR(CQTE_CD, 3, 5))), 0)),5,'0') 
+			 		 from COM_QTE) "cqteCd"              
+			from dual
+		</selectKey>
+		INSERT INTO com_qte_item (
+									    cqte_it_cd,
+									    cqte_cd,
+									    item_cd,
+									    cqte_it_qty,
+									    cqte_it_uprc
+									) VALUES (
+									    #{cqteItCd},
+									    #{cqteCd},
+									    #{itemCd},
+									    #{cqteItQty},
+									    #{cqteItUprc}
+									)
+		
+	
+	</insert>
+	<insert id="insertItemUprcOne" parameterType="kr.or.ddit.order.vo.ItemUprcVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="cqteCd">
+			select 'CQ'||LPAD((NVL(MAX(TO_NUMBER(SUBSTR(CQTE_CD, 3, 5))), 0)),5,'0') 
+			 		 from COM_QTE
+		</selectKey>
+		INSERT INTO item_uprc (
+						    item_cd,
+						    cqte_cd,
+						    uprc_conf,
+						    in_uprc,
+						    uprc_edate
+						) VALUES (
+						    #{itemCd},
+						    #{cqteCd},
+						    #{uprcConf},
+						    #{inUprc},
+						    #{uprcEdate}
+						)    
+	</insert>
+	
+</mapper>

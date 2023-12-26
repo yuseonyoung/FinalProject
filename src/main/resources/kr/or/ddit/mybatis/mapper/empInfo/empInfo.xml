@@ -1,0 +1,502 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.empInfo.dao.EmpInfoDao">
+
+
+<select id="vacGrant" resultType="kr.or.ddit.empInfo.vo.VacationVO"  >
+   SELECT
+       VAC_GRT_NO,
+       EMP_CD,
+       VAC_GRT_TYPE,
+       FN_GET_COMM_CD_NM(VAC_GRT_TYPE) AS VAC_TYPE_NM,
+       VAC_GRT_DAYS,
+       VAC_GRT_DATE,
+       SUM(VAC_GRT_DAYS) OVER (PARTITION BY EMP_CD) AS TOTAL_VAC_GRT_DAYS,
+       VAC_GRT_VAL,
+       VAC_GRT_RSN
+   FROM
+       VAC_GRT
+   WHERE
+       EMP_CD=#{empCd}
+   ORDER BY
+       VAC_GRT_DATE DESC
+
+</select>
+
+
+<select id="vacMain" parameterType="kr.or.ddit.empInfo.vo.VacationVO" resultType="kr.or.ddit.empInfo.vo.VacationVO">
+   SELECT 
+       A.EMP_CD,
+       NVL(SUM(A.VAC_GRT_DAYS),0) AS TOTAL_VAC_GRT_DAYS,
+       (SELECT
+           NVL(SUM(B.VAC_DAYS),0) AS TOTAL_VAC_DAYS
+       FROM 
+           VAC_USE B   
+       WHERE
+           TO_CHAR(B.VAC_SDATE, 'YYYY') = TO_CHAR(SYSDATE,'YYYY')
+           AND B.EMP_CD = A.EMP_CD
+       GROUP BY B.EMP_CD) AS USED_DAYS
+   FROM 
+       VAC_GRT A
+   WHERE
+       TO_CHAR(A.VAC_GRT_DATE, 'YYYY') = TO_CHAR(SYSDATE,'YYYY')
+       AND A.EMP_CD = #{empCd}
+   GROUP BY A.EMP_CD
+
+</select>
+
+
+
+<select id="empDetail" resultType="EmpInfoVO" resultMap="empInfoMap">
+   SELECT
+       A.EMP_CD
+      ,A.EMP_PW
+      ,A.EMP_NM
+      ,A.EMP_TEL_NO
+      ,A.EMP_MAIL
+      ,A.EMP_BIRTH
+      ,A.EMP_ZIP
+      ,A.EMP_ADDR
+      ,A.EMP_DADDR
+      ,A.EMP_IMG
+      ,A.EMP_SIGN
+      ,A.EMP_GEND
+      ,A.MSG_STAT
+      ,FN_GET_COMM_CD_NM(A.MSG_STAT) AS MSG_STAT
+      ,A.EMP_USE
+      ,B.DEPT_NO
+      ,B.HR_GRADE
+      , FN_GET_COMM_CD_NM(B.HR_GRADE) AS HR_GRADE_NM
+      ,B.HR_CHARGE
+      , FN_GET_COMM_CD_NM(B.HR_CHARGE) AS HR_CHARGE_NM
+      ,B.HR_SAL
+      ,B.HR_BANK
+      ,B.HR_BANK_NO
+      ,B.HR_SDATE
+      ,B.HR_EDATE
+      ,B.HR_STAT
+      ,FN_GET_COMM_CD_NM(B.HR_STAT) AS HR_STAT_NM
+      ,B.HR_MIL_YN
+      ,FN_GET_COMM_CD_NM(B.HR_MIL_YN) AS HR_MIL_YN_NM
+      ,D.HR_REC_NO
+      ,D.DEPT_NO
+      ,FN_GET_DEPT_NO_NM(D.DEPT_NO) AS DEPT_NO_REC
+      ,D.HR_GRADE 
+      , FN_GET_COMM_CD_NM(D.HR_GRADE) AS HR_GRADE_NM_REC
+      ,D.HR_CHARGE
+      , FN_GET_COMM_CD_NM(D.HR_CHARGE) AS HR_CHARGE_NM_REC
+      ,D.HR_REC_SDATE
+      ,D.HR_REC_EDATE
+      ,D.HR_REC_NOTE
+      ,E.FAM_NO
+      ,E.FAM_NM
+      ,E.FAM_REL
+      ,FN_GET_COMM_CD_NM(E.FAM_REL) AS FAM_REL_NM
+      ,E.FAM_BIRTH AS FAM_BIRTH
+      ,E.FAM_GEND AS FAM_GEND
+      ,F.DEPT_NM 
+      
+   FROM
+       EMP A
+   INNER JOIN HR_INFO B    
+   ON A.EMP_CD = B.EMP_CD
+   
+   LEFT JOIN HR_REC D    
+   ON A.EMP_CD = D.EMP_CD
+   
+   LEFT JOIN FAM E    
+   ON A.EMP_CD = E.EMP_CD 
+   
+   INNER JOIN DEPT F
+   ON B.DEPT_NO = F.DEPT_NO
+   
+   WHERE A.EMP_CD = #{empCd}
+   
+   ORDER BY 
+   	D.HR_REC_SDATE ASC
+   
+   
+</select>
+
+<resultMap type="kr.or.ddit.empInfo.vo.EmpInfoVO" id="empInfoMap">
+   <result property="empCd" column="EMP_CD" />
+   <result property="empPw" column="EMP_PW" />
+   <result property="empNm" column="EMP_NM" />
+   <result property="empTelNo" column="EMP_TEL_NO" />
+   <result property="empMail" column="EMP_MAIL" />
+   <result property="empBirth" column="EMP_BIRTH" />
+   <result property="empZip" column="EMP_ZIP" />
+   <result property="empAddr" column="EMP_ADDR" />
+   <result property="empDaddr" column="EMP_DADDR" />
+   <result property="empImg" column="EMP_IMG" />
+   <result property="empSign" column="EMP_SIGN" />
+   <result property="empGend" column="EMP_GEND" />
+   <result property="msgStat" column="MSG_STAT" />
+   <result property="empUse" column="EMP_USE" />
+   
+   <result property="deptNo" column="DEPT_NO" />
+   <result property="hrGrade" column="HR_GRADE" />
+   <result property="hrGradeNm" column="HR_GRADE_NM" />
+   <result property="hrCharge" column="HR_CHARGE" />
+   <result property="hrChargeNm" column="HR_CHARGE_NM" />
+   <result property="hrSal" column="HR_SAL" />
+   <result property="hrBank" column="HR_BANK" />
+   <result property="hrBankNo" column="HR_BANK_NO" />
+   <result property="hrSdate" column="HR_SDATE" />
+   <result property="hrEdate" column="HR_EDATE" />
+   <result property="hrStat" column="HR_STAT" />
+   <result property="hrStatNm" column="HR_STAT_NM" />
+   <result property="hrMilYn" column="HR_MIL_YN" />
+   <result property="hrMilYnNm" column="HR_MIL_YN_NM" />
+   
+   <result property="deptNm" column="DEPT_NM" />
+   
+   <collection property="hrRecVO" resultMap="hrRecMap"></collection>
+   <collection property="famVO" resultMap="famMap"></collection>
+</resultMap>
+
+<resultMap type="kr.or.ddit.empInfo.vo.HrRecVO" id="hrRecMap">
+   <result property="hrRecNo" column="HR_REC_NO" />
+   <result property="deptNo" column="DEPT_NO" />
+   <result property="deptNoRec" column="DEPT_NO_REC" />
+   <result property="hrGrade" column="HR_GRADE" />
+   <result property="hrGradeNmRec" column="HR_GRADE_NM_REC" />
+   <result property="hrCharge" column="HR_CHARGE" />
+   <result property="hrChargeNmRec" column="HR_CHARGE_NM_REC" />
+   <result property="hrRecSdate" column="HR_REC_SDATE" />
+   <result property="hrRecEdate" column="HR_REC_EDATE" />
+   <result property="hrRecNote" column="HR_REC_NOTE" />
+</resultMap>
+
+<resultMap type="kr.or.ddit.empInfo.vo.FamVO" id="famMap">
+   <result property="famNo" column="FAM_NO" />
+   <result property="famNm" column="FAM_NM" />
+   <result property="famRel" column="FAM_REL" />
+   <result property="famRelNm" column="FAM_REL_NM" />
+   <result property="famBirth" column="FAM_BIRTH" />
+   <result property="famGend" column="FAM_GEND" />
+</resultMap>
+
+
+
+<update id="updatePersonal" parameterType="EmpInfoVO">
+   UPDATE EMP
+   SET 
+       EMP_ZIP = #{empZip}
+       , EMP_ADDR = #{empAddr}
+       , EMP_DADDR = #{empDaddr}
+   WHERE EMP_CD = #{empCd}
+</update>
+
+
+<delete id="deleteFam" parameterType="kr.or.ddit.empInfo.vo.FamVO">
+   DELETE
+   FROM FAM
+   WHERE FAM_NO = #{famNo}
+</delete>
+
+<!-- 1) 로그인 아이디에 해당되는 가족 데이터 삭제 -->
+<delete id="deleteFamEmpCd" parameterType="EmpInfoVO">
+   DELETE
+   FROM FAM
+   WHERE EMP_CD = #{empCd}
+</delete>
+
+<!-- 2) 로그인 아이디에 해당 는 가족 insert -->
+<insert id="insertFam" parameterType="kr.or.ddit.empInfo.vo.FamVO">
+   <selectKey resultType="int" order="BEFORE" keyProperty="famNo">
+      SELECT NVL(MAX(FAM_NO),0)+1 FROM FAM
+   </selectKey>
+   INSERT INTO FAM(FAM_NO, EMP_CD, FAM_NM, FAM_REL, FAM_BIRTH, FAM_GEND)
+   VALUES(#{famNo},#{empCd},#{famNm, jdbcType=VARCHAR},#{famRel, jdbcType=VARCHAR},#{famBirth},#{famGend})
+</insert>
+
+
+<select id="selectFamManageCode" resultType="kr.or.ddit.empInfo.vo.FamManageCodeVO"> 
+   SELECT COMM_CD, GR_CD, COMM_CD_NM, USE_YN
+   FROM COMM_CD
+   WHERE GR_CD = 'O' AND USE_YN = 'Y'
+</select>
+
+<select id="detailUsedVac" resultType="kr.or.ddit.empInfo.vo.VacationVO">
+	SELECT
+	   EMP_CD
+	   ,VAC_DAYS
+	   ,VAC_TYPE
+	   ,FN_GET_COMM_CD_NM(VAC_TYPE) as VAC_TYPE_NM
+	   ,VAC_SDATE
+	   ,VAC_EDATE
+	   ,VAC_RSN
+	FROM
+	    VAC_USE
+	    
+	WHERE EMP_CD = #{empCd}
+	AND 
+	TO_CHAR(VAC_SDATE, 'YYYY') = TO_CHAR(SYSDATE,'YYYY')
+	
+	ORDER BY VAC_SDATE
+
+</select>
+
+<select id="makeVacSelect" resultType="kr.or.ddit.empInfo.vo.VacationVO">
+	SELECT
+	   A.EMP_CD
+	   ,A.VAC_DAYS
+	   ,A.VAC_TYPE
+	   ,FN_GET_COMM_CD_NM(A.VAC_TYPE) AS VAC_TYPE_NM
+	   ,A.VAC_SDATE
+	   ,A.VAC_EDATE
+	   ,A.VAC_RSN
+	   ,TO_CHAR(B.HR_SDATE,'YYYY') AS JOIN_YEAR
+	   
+	FROM
+	    VAC_USE A
+	INNER JOIN HR_INFO B ON B.EMP_CD = A.EMP_CD
+	WHERE A.EMP_CD = #{empCd}
+	ORDER BY A.VAC_SDATE
+
+</select>
+
+
+<select id="findJoinYear" resultType="kr.or.ddit.empInfo.vo.VacationVO">
+	SELECT
+	   EMP_CD
+	   ,TO_CHAR(HR_SDATE,'YYYY') AS JOIN_YEAR
+	
+	FROM
+	    HR_INFO
+	
+	WHERE EMP_CD = #{empCd}
+</select>
+
+
+<select id="showVacUsed" resultType="kr.or.ddit.empInfo.vo.VacationVO">
+   SELECT
+      A.EMP_CD
+      ,A.VAC_DAYS
+      ,A.VAC_TYPE
+      ,FN_GET_COMM_CD_NM(A.VAC_TYPE) AS VAC_TYPE_NM
+      ,A.VAC_SDATE
+      ,A.VAC_EDATE
+      ,A.VAC_RSN
+      ,TO_CHAR(B.HR_SDATE,'YYYY') AS JOIN_YEAR
+      
+   FROM
+       VAC_USE A
+   INNER JOIN HR_INFO B ON B.EMP_CD = A.EMP_CD
+   WHERE A.EMP_CD = #{empCd}
+   AND TO_CHAR(A.VAC_SDATE, 'YYYY') = #{selectedValue}
+</select>
+
+<select id="employeesVacVO" resultType="kr.or.ddit.empInfo.vo.EmployeesVacVO">
+   SELECT
+       A.EMP_CD,
+       A.EMP_NM,
+       FN_GET_DEPT_NO_NM(B.DEPT_NO) AS DEPT_NO_NM,
+       TO_CHAR(SYSDATE, 'YYYY') - TO_CHAR(B.HR_SDATE, 'YYYY') + 1 AS WORKING_YEAR,
+       FN_GET_COMM_CD_NM(B.HR_STAT) AS HR_STAT_NM,
+       NVL(C.TOTAL_VAC_GRT_DAYS, 0) AS TOTAL_VAC_GRT_DAYS,
+       NVL(D.TOTAL_VAC_DAYS, 0) AS TOTAL_VAC_DAYS,
+       NVL(C.TOTAL_VAC_GRT_DAYS, 0) - NVL(D.TOTAL_VAC_DAYS, 0) AS REMAIN_DAYS
+   FROM
+       EMP A
+   INNER JOIN HR_INFO B ON B.EMP_CD = A.EMP_CD
+   LEFT JOIN (
+       SELECT EMP_CD, NVL(SUM(VAC_GRT_DAYS), 0) AS TOTAL_VAC_GRT_DAYS
+       FROM VAC_GRT
+       WHERE TO_CHAR(VAC_GRT_DATE, 'YYYY') = TO_CHAR(SYSDATE,'YYYY')
+       GROUP BY EMP_CD
+   ) C ON C.EMP_CD = A.EMP_CD
+   LEFT JOIN (
+       SELECT EMP_CD, NVL(SUM(VAC_DAYS), 0) AS TOTAL_VAC_DAYS
+       FROM VAC_USE
+       WHERE TO_CHAR(VAC_SDATE, 'YYYY') = TO_CHAR(SYSDATE,'YYYY')
+       GROUP BY EMP_CD
+   ) D ON D.EMP_CD = A.EMP_CD
+   ORDER BY 
+   	   DEPT_NO
+</select>
+
+
+<select id="paymentVO" resultType="kr.or.ddit.empInfo.vo.PaymentVO">
+	SELECT
+	    PAY_NO,
+	    EMP_CD,
+	    WORK_DATE,
+	    PAY_DATE,
+	    ROUND(SAL,0),
+	    COALESCE(OVER_WORK, 0) AS OVER_WORK,
+	    FOOD,
+	    NPN,
+	    EMP_INS,
+	    INTAX,
+	    LINTAX,
+	    ROUND(PAY,0) AS PAY,
+	    HLTH_INS,
+	    LTC,
+	    TRUNC(COALESCE(SAL, 0) + COALESCE(OVER_WORK, 0) + COALESCE(FOOD, 0), -2) AS TOTAL_PAY,
+	    NPN + EMP_INS + INTAX + LINTAX + HLTH_INS + LTC  AS TOTAL_TAX, 
+	    SUBSTR(WORK_DATE, 1, 4) AS SELECT_YEAR
+	   
+	FROM
+	    PAYMENT A
+	    
+	WHERE EMP_CD = #{empCd}
+	AND SUBSTR(WORK_DATE, 1, 4) = #{selectYear}
+	ORDER BY
+	    WORK_DATE
+</select>
+
+
+<select id="paymentDetail" resultType="kr.or.ddit.empInfo.vo.PaymentVO">
+	SELECT
+	    A.PAY_NO,
+	    A.EMP_CD,
+	    B.EMP_NM,
+	    FN_GET_DEPT_NO_NM(C.DEPT_NO) AS DEPT_NO_NM,
+	    FN_GET_COMM_CD_NM(C.HR_GRADE) AS HR_GRADE_NM,
+	    B.EMP_BIRTH,
+	    A.WORK_DATE,
+	    A.PAY_DATE,
+	    A.SAL,
+	    ROUND(A.SAL,0) AS ROUND_SAL,
+	    COALESCE(A.OVER_WORK, 0) AS OVER_WORK,
+	    A.FOOD,
+	    A.NPN,
+	    A.EMP_INS,
+	    A.INTAX,
+	    A.LINTAX,
+	    ROUND(A.PAY,0) AS PAY,
+	    A.HLTH_INS,
+	    A.LTC,
+	    TRUNC(COALESCE(SAL, 0) + COALESCE(OVER_WORK, 0) + COALESCE(FOOD, 0), -2)  AS TOTAL_PAY,
+	    A.NPN + A.EMP_INS + A.INTAX + A.LINTAX + A.HLTH_INS + A.LTC  AS TOTAL_TAX
+	
+	
+	FROM
+	    PAYMENT A
+	    
+	INNER JOIN EMP B
+	ON B.EMP_CD = A.EMP_CD
+	
+	INNER JOIN HR_INFO C
+	ON C.EMP_CD = A.EMP_CD
+	    
+	WHERE PAY_NO = #{payNo}
+</select>
+
+
+<select id="selectBank" resultType="kr.or.ddit.empInfo.vo.PaymentVO">
+	SELECT 
+	A.EMP_CD
+	,B.EMP_NM
+	,A.HR_BANK
+	,A.HR_BANK_NO
+	FROM HR_INFO A
+	INNER JOIN EMP B
+	ON B.EMP_CD = A.EMP_CD
+	WHERE A.EMP_CD= #{empCd}
+</select>
+
+
+<update id="paymentUpdate" parameterType="kr.or.ddit.empInfo.vo.PaymentVO">
+	UPDATE HR_INFO
+	SET HR_BANK = #{hrBank}
+	,HR_BANK_NO = #{hrBankNo}
+	
+	WHERE EMP_CD = #{empCd}
+
+</update>
+
+
+<select id="paymentEmployeeList" resultType="kr.or.ddit.empInfo.vo.PaymentEmployeeVO">
+
+	SELECT
+	    A.PAY_NO,
+	    A.EMP_CD,
+	    B.EMP_NM,
+	    FN_GET_DEPT_NO_NM(C.DEPT_NO) AS DEPT_NO_NM,
+	    C.HR_BANK,
+	    C.HR_BANK_NO,
+	    ROUND(A.PAY,0) AS PAY,
+	    TRUNC(COALESCE(A.SAL, 0) + COALESCE(A.OVER_WORK, 0) + COALESCE(A.FOOD, 0), -2) AS TOTAL_PAY,
+	    nvl(A.NPN + A.EMP_INS + A.INTAX + A.LINTAX + A.HLTH_INS + A.LTC,0)  AS TOTAL_TAX, 
+	    SUBSTR(A.WORK_DATE, 1, 4) AS SELECT_YEAR,
+	    SUBSTR(A.WORK_DATE, 5, 6) AS SELECT_MONTH
+	   
+	FROM
+	    PAYMENT A
+	    
+	INNER JOIN EMP B
+	ON A.EMP_CD = B.EMP_CD
+	
+	INNER JOIN HR_INFO C
+	ON C.EMP_CD = A.EMP_CD
+	
+	ORDER BY
+	    A.WORK_DATE DESC
+
+</select>
+
+
+<select id="paymentEmployeeExcel" resultType="kr.or.ddit.empInfo.vo.PaymentVO">
+	SELECT
+	    A.PAY_NO,
+	    A.EMP_CD,
+	    B.EMP_NM,
+	    FN_GET_DEPT_NO_NM(C.DEPT_NO) AS DEPT_NO_NM,
+	    FN_GET_COMM_CD_NM(C.HR_GRADE) AS HR_GRADE_NM,
+        C.HR_BANK,
+        C.HR_BANK_NO,
+	    A.WORK_DATE,
+	    A.PAY_DATE,
+	    ROUND(A.SAL,0) AS ROUND_SAL,
+	    COALESCE(A.OVER_WORK, 0) AS OVER_WORK,
+	    A.FOOD,
+	    A.NPN,
+	    A.EMP_INS,
+	    A.INTAX,
+	    A.LINTAX,
+	    A.HLTH_INS,
+	    A.LTC,
+	    TRUNC(COALESCE(SAL, 0) + COALESCE(OVER_WORK, 0) + COALESCE(FOOD, 0), -2)  AS TOTAL_PAY,
+	    A.NPN + A.EMP_INS + A.INTAX + A.LINTAX + A.HLTH_INS + A.LTC  AS TOTAL_TAX,
+        ROUND(A.PAY,0) AS PAY
+	
+	
+	FROM
+	    PAYMENT A
+	    
+	INNER JOIN EMP B
+	ON B.EMP_CD = A.EMP_CD
+	
+	INNER JOIN HR_INFO C
+	ON C.EMP_CD = A.EMP_CD
+    
+    ORDER BY PAY_DATE DESC,EMP_CD ASC, DEPT_NO_NM DESC
+        
+</select>
+
+<update id="regPic" parameterType="EmpInfoVO">
+	UPDATE EMP
+	SET
+	EMP_IMG = #{empImg}
+	WHERE EMP_CD = #{empCd}
+</update>
+
+<update id="regSign" parameterType="EmpInfoVO">
+	UPDATE EMP
+	SET
+	EMP_SIGN = #{empSign}
+	WHERE EMP_CD = #{empCd}
+</update>
+
+<update id="changePw">
+	UPDATE EMP
+	SET
+	EMP_PW = #{empPw}
+	WHERE 
+	EMP_CD = #{empCd}
+</update>
+
+</mapper>

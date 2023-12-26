@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.board.dao.BoardDAO">
+
+	<!-- /* BoardVO(rnum=0, brdNo=null, brdTitle=asdf, brdCont=<p>sss</p> , 
+		brdRdate=null, brdHit=0, brdTemp=null, empNm=null, empAuth=null, atchBrdFileDetailVOList=null, 
+		uploadFile=[org.sprin , brdNm=E201802180101 */ -->
+	<insert id="createPost" parameterType="BoardVO">
+		<selectKey resultType="String" order="BEFORE"
+			keyProperty="brdNo">
+			SELECT 'BRD' ||
+			TRIM(TO_CHAR(SUBSTR(MAX(BRD_NO),4)+1,'0000000')) FROM BOARD
+		</selectKey>
+
+		INSERT INTO BOARD(BRD_NO, BRD_TITLE, BRD_CONT, BRD_RDATE, BRD_HIT,
+		BRD_TEMP, BRD_NM)
+		VALUES
+		(#{brdNo},#{brdTitle},#{brdCont},to_char(sysdate,'yyyy-mm-dd'),0,'N',#{brdNm})
+	</insert>
+
+	<select id="brdDetail">
+		SELECT BRD_NO, BRD_TITLE, BRD_CONT, BRD_RDATE,
+		BRD_HIT, BRD_TEMP
+		FROM BOARD
+		WHERE BRD_NO = #{brdNo}
+	</select>
+
+	<!-- 여기 부터 -->
+
+	<!-- 공지사항 전체 행의 수 -->
+	<select id="total" parameterType="hashMap" resultType="int">
+		SELECT
+		count(*)
+		FROM BOARD N, EMP E
+		WHERE n.BRD_NM = e.emp_cd
+		AND n.BRD_TITLE
+		LIKE '%' || #{keyword} || '%'
+	</select>
+
+	<!-- {"keyword":"개똥이","currentPage":"3"} 또는 {"keyword":"","currentPage":"1"} 
+		이거 검색 쿼리 -->
+	<select id="boardList" parameterType="hashMap"
+		resultType="kr.or.ddit.board.vo.BoardVO">
+
+		WITH U AS(
+		SELECT ROW_NUMBER() OVER(ORDER BY T.RNUM1 DESC) RNUM, T.*
+		FROM
+		(
+		SELECT ROW_NUMBER() OVER(ORDER BY n.BRD_NO ASC) RNUM1,
+		n.BRD_NO,
+		n.BRD_TITLE, n.BRD_CONT, n.BRD_RDATE, n.BRD_HIT, n.BRD_TEMP,
+		e.emp_nm,
+		e.emp_auth
+		FROM BOARD N, EMP E
+		WHERE n.BRD_NM = e.emp_cd
+		AND n.BRD_TITLE
+		LIKE '%' || #{keyword} || '%'
+		) T
+		)
+		SELECT * FROM U
+		WHERE U.RNUM BETWEEN
+		(#{currentPage}*10 - (10-1)) AND (#{currentPage}*10)
+		<!-- SELECT NTC_NO, NTC_TITLE, NTC_CONT, NTC_RDATE, NTC_HIT, NTC_NM FROM 
+			NOTICE WHERE 1 = 1 AND NTC_TITLE LIKE '%' || #{keyword} || '%' ORDER BY NTC_NO 
+			ASC -->
+	</select>
+
+	<resultMap type="BoardVO" id="BoardMap">
+		<result property="brdNo" column="BRD_NO" />
+		<result property="brdTitle" column="BRD_TITLE" />
+		<result property="brdCont" column="BRD_CONT" />
+		<result property="brdRdate" column="BRD_RDATE" />
+		<result property="brdHit" column="BRD_HIT" />
+		<result property="brdTemp" column="BRD_TEMP" />
+		<result property="empNm" column="BRD_NM" />
+		<collection property="atchBrdFileDetailVOList"
+			resultMap="atchBrdFileDetailMap"></collection>
+	</resultMap>
+
+	<resultMap type="AtchBrdFileDetailVO"
+		id="atchBrdFileDetailMap">
+		<result property="atchFileId" column="ATCH_FILE_ID" />
+		<result property="fileSn" column="FILE_SN" />
+		<result property="fileStreCours" column="FILE_STRE_COURS" />
+		<result property="streFileNm" column="STRE_FILE_NM" />
+		<result property="orignlFileNm" column="ORIGNL_FILE_NM" />
+		<result property="fileExtsn" column="FILE_EXTSN" />
+		<result property="fileCn" column="FILE_CN" />
+		<result property="fileSize" column="FILE_SIZE" />
+	</resultMap>
+
+	<select id="pageDetail" parameterType="BoardVO"
+		resultMap="BoardMap">
+		SELECT A.BRD_NO, A.BRD_TITLE, A.BRD_CONT, A.BRD_RDATE,
+		A.BRD_HIT, A.BRD_TEMP
+		, (SELECT C.EMP_NM FROM EMP C WHERE C.EMP_CD =
+		A.BRD_NM) BRD_NM
+		, B.ATCH_FILE_ID, B.FILE_SN, B.FILE_STRE_COURS,
+		B.STRE_FILE_NM,
+		B.ORIGNL_FILE_NM
+		, B.FILE_EXTSN, B.FILE_CN, B.FILE_SIZE
+		FROM BOARD A, ATCH_BRD_FILE_DETAIL B
+		WHERE A.BRD_NO = B.ATCH_FILE_ID(+)
+		AND A.BRD_NO = #{brdNo}
+	</select>
+
+	<select id="pageSelect">
+		SELECT BRD_NO, BRD_TITLE, BRD_CONT, BRD_RDATE,
+		BRD_HIT, BRD_TEMP
+		FROM BOARD
+		ORDER BY BRD_NO = #{brdNo}
+	</select>
+
+	<!-- 들어올땐 : NoticeVO(ntcNo=null, ntcTitle=asfd, ntcCont=<p>sdd</p>, ntcRdate=null, 
+		ntcHit=0, ntcNm=E201802180101) 나갈땐 : NoticeVO(ntcNo=NTC0000124, ntcTitle=asfd, 
+		ntcCont=<p>sdd</p>, ntcRdate=null, ntcHit=0, ntcNm=E201802180101) -->
+	<insert id="pageCreatePost"
+		parameterType="kr.or.ddit.board.vo.BoardVO">
+		<selectKey resultType="String" order="BEFORE"
+			keyProperty="brdNo">
+			SELECT 'BRD' ||
+			TRIM(TO_CHAR((SUBSTR(MAX(BRD_NO),4)+1),'0000000')) FROM
+			BOARD
+		</selectKey>
+		INSERT INTO BOARD(BRD_NO, BRD_TITLE, BRD_CONT, BRD_RDATE, BRD_HIT,
+		BRD_TEMP)
+		VALUES(#{brdNo},#{brdTitle},#{brdCont},#{brdRdate},#{brdHit},#{brdTemp})
+
+
+	</insert>
+
+	<!-- BoardVO(rnum=0, brdNo=BRD0000009, brdTitle=h, brdCont=<p>fhg</p> , 
+		brdRdate=n -->
+	<update id="pageDetailUpdate">
+		UPDATE BOARD
+		SET
+		BRD_TITLE=#{brdTitle},BRD_CONT=#{brdCont}
+		WHERE BRD_NO = #{brdNo}
+	</update>
+
+	<update id="pageDetailUpdatePost">
+		UPDATE BOARD
+		SET
+		BRD_TITLE=#{brdTitle},BRD_CONT=#{brdCont}
+		WHERE BRD_NO = #{brdNo}
+	</update>
+
+	<!-- BoardVO(rnum=0, brdNo=BRD0000009, brdTitle=h, brdCont=<p>fhg</p> , 
+		brdRdate=n -->
+	<delete id="pageDetailDelete">
+		DELETE FROM BOARD
+		WHERE BRD_NO = #{brdNo}
+	</delete>
+
+	<update id="pageUpdateHit" parameterType="BoardVO">
+		update BOARD
+		set BRD_HIT
+		= BRD_HIT + 1
+		where BRD_NO = #{brdNo}
+
+	</update>
+
+</mapper>

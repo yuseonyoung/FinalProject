@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper	namespace="kr.or.ddit.storage.dao.InventoryReceiptPaymentDAO">
+	
+	<sql id="whereFrag">
+		<trim prefix="WHERE" prefixOverrides="AND">
+	        <if test="wareCd != null and wareCd != ''">
+	            AND S.ware_cd = #{wareCd}
+	        </if>
+	        <if test='!"Y".equals(itemYn)'>
+	            AND S.item_yn = 'Y'
+	        </if>
+	        <if test="itemList.size() > 0">
+	            AND (
+	                <foreach collection="itemList" item="item" separator=" OR ">
+	                    <if test="item != null">
+	                        S.item_cd = #{item.itemCd}
+	                    </if>
+	                </foreach>
+	            )
+	        </if>
+		</trim>
+	</sql>
+	
+	<resultMap type="ItemVO" id="ItemMap">
+		<result property="itemCd" column="ITEM_CD" />
+		<result property="itemNm" column="ITEM_NM" />
+		<result property="itemUnit" column="ITEM_UNIT" />
+		<result property="itemCate" column="ITEM_CATE" />
+		<result property="itemSafeQty" column="ITEM_SAFE_QTY" />
+		<result property="itemYn" column="ITEM_YN" />
+		<result property="itemNote" column="ITEM_NOTE" />
+		<result property="itMaker" column="IT_MAKER" />
+		<result property="itWght" column="IT_WGHT" />
+		<result property="itColor" column="IT_COLOR" />
+		<result property="itemInpr" column="ITEM_INPR" />
+		<result property="itemOutpr" column="ITEM_OUTPR" />
+		<result property="itemQty" column="ITEM_QTY" />
+		<collection property="itemDetailVOList" resultMap="itemDetailMap"></collection>
+	</resultMap>
+	
+	<resultMap type="ItemDetailVO" id="itemDetailMap">
+		<result property="itemCd" column="ITEM_CD" />
+		<result property="itemNm" column="ITEM_NM" /> 
+		<result property="rmstDate" column="RMST_DATE" />   
+		<result property="storCate" column="STOR_CATE" />   
+		<result property="comNm" column="COM_NM" />    
+		<result property="rmstNote" column="RMST_NOTE" />   
+		<result property="wareCd" column="WARE_CD" />   
+		<result property="storRsn" column="STOR_RSN" />   
+		<result property="rmstInQty" column="RMST_IN_QTY" />  
+		<result property="rmstOutQty" column="RMST_OUT_QTY" /> 
+		<result property="rmstSelfQty" column="RMST_SELF_QTY" />
+		<result property="rmstInitQty" column="RMST_INIT_QTY" />
+		<result property="jaego" column="JAEGO" />
+	</resultMap>
+	
+	<select id="retrieveInventoryList" parameterType="java.util.Map" resultMap="ItemMap">
+		WITH S AS(
+		    SELECT T.ITEM_CD, (SELECT E.ITEM_NM FROM ITEM E WHERE E.ITEM_CD = T.ITEM_CD) ITEM_NM
+		         , T.RMST_DATE, T.STOR_CATE, T.COM_NM, T.RMST_NOTE, T.WARE_CD, T.STOR_RSN, T.ITEM_YN     
+		         , NVL(MAX(CASE WHEN T.STOR_CATE = 'B001' THEN T.RMST_IN_QTY END),0) RMST_IN_QTY
+		         , NVL(MAX(CASE WHEN T.STOR_CATE = 'B002' THEN T.RMST_OUT_QTY END),0) RMST_OUT_QTY
+		         , NVL(MAX(CASE WHEN T.STOR_CATE = 'B003' THEN T.RMST_SELF_QTY END),0) RMST_SELF_QTY
+		         , NVL(MAX(CASE WHEN T.STOR_CATE = 'B000' THEN T.RMST_INIT_QTY END),0) RMST_INIT_QTY
+		         , FN_GET_JAEGO(TO_CHAR(TO_DATE(#{rmstSdate},'YYYY/MM/DD'),'YYYY-MM-DD'), T.ITEM_CD) JAEGO
+		    FROM  
+		    (
+		         select a.item_cd
+		             , a.rmst_date
+		             , 'B000' stor_cate
+		             , '초기입고' COM_NM
+		             , a.RMST_NOTE
+                     , a.ware_cd
+                     , a.stor_rsn
+                     , b.item_yn
+		             , 0 rmst_in_qty
+		             , 0 rmst_out_qty
+		             , 0 rmst_self_qty
+		             , a.rmst_qty rmst_init_qty
+		        from stor_inout a inner join item b on(a.item_cd = b.item_cd) 
+		        where 1=1 
+		        <if test="rmstSdate!=null and rmstSdate!='' and rmstLdate!=null and rmstLdate!=''">
+		        and a.rmst_date BETWEEN TO_DATE(#{rmstSdate},'YYYY/MM/DD') AND TO_DATE(#{rmstLdate},'YYYY/MM/DD')
+		        </if>
+		        and a.rmst_note = '초기입고'
+		        union all
+		        select a.item_cd
+		                     , a.rmst_date
+		                     , a.stor_cate
+		                     , '[구매]-'||FN_GET_IN_COM_NM(a.item_cd,a.pord_cd) COM_NM
+		                     , a.RMST_NOTE
+                             , a.ware_cd
+                             , a.stor_rsn
+                             , b.item_yn
+		                     , sum(a.rmst_qty) rmst_in_qty
+		                     , 0 rmst_out_qty
+		                     , 0 rmst_self_qty
+		                     , 0
+		                from stor_inout a inner join item b on(a.item_cd = b.item_cd) 
+		                where 1=1 
+		                <if test="rmstSdate!=null and rmstSdate!='' and rmstLdate!=null and rmstLdate!=''">
+				        and a.rmst_date BETWEEN TO_DATE(#{rmstSdate},'YYYY/MM/DD') AND TO_DATE(#{rmstLdate},'YYYY/MM/DD')
+				        </if>
+		                and a.stor_cate = 'B001' 
+		                GROUP BY a.item_cd
+		                     , a.rmst_date
+		                     , a.stor_cate
+		                     , FN_GET_IN_COM_NM(a.item_cd,a.pord_cd)
+		                     , a.RMST_NOTE
+                             , a.ware_cd
+                             , a.stor_rsn
+                             , b.item_yn
+		        UNION ALL
+		               select a.item_cd
+		                     , a.rmst_date
+		                     , a.stor_cate
+		                     , '[판매]-'||FN_GET_OUT_COM_NM(a.item_cd,a.rdrec_cd) COM_NM
+		                     , a.RMST_NOTE
+                             , a.ware_cd
+                             , a.stor_rsn
+                             , b.item_yn
+		                     , 0
+		                     , sum(a.rmst_qty) rmst_out_qty
+		                     , 0
+		                     , 0
+		                from stor_inout a inner join item b on(a.item_cd = b.item_cd) 
+		                where 1=1 
+		                <if test="rmstSdate!=null and rmstSdate!='' and rmstLdate!=null and rmstLdate!=''">
+				        and a.rmst_date BETWEEN TO_DATE(#{rmstSdate},'YYYY/MM/DD') AND TO_DATE(#{rmstLdate},'YYYY/MM/DD')
+				        </if>
+		                and a.stor_cate = 'B002'
+		                GROUP BY a.item_cd
+		                     , a.rmst_date
+		                     , a.stor_cate
+		                     , FN_GET_OUT_COM_NM(a.item_cd,a.rdrec_cd) 
+		                     , a.RMST_NOTE
+                             , a.ware_cd
+                             , a.stor_rsn
+                             , b.item_yn
+		        UNION ALL
+		            select a.item_cd
+		                 , a.rmst_date
+		                 , a.stor_cate
+		                 , '자가사용' COM_NM
+		                 , a.RMST_NOTE
+                         , a.ware_cd
+                         , a.stor_rsn
+                         , b.item_yn
+		                 , 0
+		                 , 0
+		                 , sum(a.rmst_qty) rmst_self_qty
+		                 , 0
+		            from stor_inout a inner join item b on(a.item_cd = b.item_cd) 
+		            where 1=1 
+		            <if test="rmstSdate!=null and rmstSdate!='' and rmstLdate!=null and rmstLdate!=''">
+			        and a.rmst_date BETWEEN TO_DATE(#{rmstSdate},'YYYY/MM/DD') AND TO_DATE(#{rmstLdate},'YYYY/MM/DD')
+			        </if>
+		            and a.stor_cate = 'B003'
+		            GROUP BY a.item_cd
+		                 , a.rmst_date
+		                 , a.stor_cate 
+		                 , a.RMST_NOTE
+                         , a.ware_cd
+                         , a.stor_rsn
+                         , b.item_yn
+		    ) T
+		    GROUP BY T.ITEM_CD, T.RMST_DATE, T.STOR_CATE, T.COM_NM, T.RMST_NOTE, T.WARE_CD, T.STOR_RSN, T.ITEM_YN
+		) 
+		SELECT S.ITEM_CD, S.ITEM_NM, S.RMST_DATE, S.STOR_CATE, S.COM_NM, S.RMST_NOTE, S.WARE_CD, S.STOR_RSN 
+		     , S.RMST_IN_QTY, S.RMST_OUT_QTY, S.RMST_SELF_QTY, S.RMST_INIT_QTY, S.JAEGO
+		FROM S
+        <include refid="whereFrag"/>        
+		ORDER BY 1,3
+	</select>
+	
+	
+</mapper>

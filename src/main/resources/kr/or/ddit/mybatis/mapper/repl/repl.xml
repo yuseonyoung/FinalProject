@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.board.dao.ReplDAO">
+
+	<resultMap type="kr.or.ddit.board.vo.BoardVO" id="brdMap" autoMapping="true">
+	    <id property="brdNo" column="BRD_NO"/>
+	    <association property="empNm" autoMapping="true"/>
+	    <association property="brdNo" autoMapping="true"/>
+	    <collection property="replNo" ofType="kr.or.ddit.board.vo.ReplVO" autoMapping="true">
+	        <association property="replNo" autoMapping="true"/>
+	    </collection>
+	</resultMap>
+
+	<select id="replList" parameterType="ReplVO" resultType="ReplVO">
+		SELECT B.REPL_NO, B.EMP_CD, E.EMP_NM, E.EMP_IMG, B.REPL_CONT, B.REPL_RDATE, B.BRD_NO 
+    	FROM BRD_REPL B, EMP E  
+    	WHERE
+        	B.EMP_CD = E.EMP_CD and
+        	B.BRD_NO = #{brdNo}	
+	</select>
+	
+	<select id="replSelect" parameterType="ReplVO" resultType="ReplVO">
+		 SELECT REPL_NO, EMP_CD, REPL_CONT, REPL_RDATE, BRD_NO
+		 FROM BRD_REPL
+		 WHERE BRD_NO = #{brdNo}
+	</select>
+	
+	<!-- 댓글 입력 
+	public int createPost(ReplVO replVO)
+	-->
+	<insert id="createPost" parameterType="ReplVO">
+		<selectKey resultType="int" order="BEFORE" keyProperty="replNo">
+			SELECT NVL(MAX(REPL_NO),0)+1 FROM BRD_REPL
+		</selectKey>
+		INSERT INTO BRD_REPL (REPL_NO, EMP_CD, REPL_CONT, REPL_RDATE, REPL_MDATE, BRD_NO)
+		VALUES (#{replNo}, #{empCd}, #{replCont}, SYSDATE, null, #{brdNo})
+	</insert>
+	
+	<!-- 
+	ReplVO(replNo=1, empCd=null, replCont=제니!!블랙핑크!!fsda, replRdate=null, replMdate=null, brdNo=null)
+	 -->
+	<update id="updatePost" parameterType="ReplVO">
+		UPDATE BRD_REPL
+		SET    REPL_CONT = #{replCont}, REPL_MDATE = SYSDATE
+		WHERE  REPL_NO = #{replNo}
+	</update>
+	
+	<delete id="deletePost" parameterType="ReplVO">
+		DELETE FROM BRD_REPL
+		WHERE REPL_NO = #{replNo}
+	</delete>
+</mapper>

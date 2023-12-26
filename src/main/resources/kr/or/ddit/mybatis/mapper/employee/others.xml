@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--  [[개정이력(Modification Information)]]       -->
+<!--  수정일        수정자     수정내용               -->
+<!--  ==========   ======    ==============        -->
+<!--  2023. 11. 10.}     이수정     최초작성               -->
+<!--  Copyright (c) 2023 by DDIT All right reserved -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.employee.dao.OthersDAO">
+	<select id="selectAuthList"
+		resultType="kr.or.ddit.employee.vo.OthersVO">
+		SELECT
+		AUTH_CD
+		FROM
+		EMP_AUTH
+	</select>
+
+
+	<select id="selectUseList">
+		SELECT
+		COMM_CD_NM
+		FROM
+		COMM_CD
+		WHERE GR_CD= 'S'
+	</select>
+</mapper>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tiles-definitions PUBLIC
+       "-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN"
+       "http://tiles.apache.org/dtds/tiles-config_3_0.dtd">
+<tiles-definitions>
+
+	<definition name="login_layout" template="/WEB-INF/views/tiles/forLogin.jsp">
+        <put-attribute name="footer" value="/WEB-INF/views/tiles/footer.jsp"/>
+    </definition>
+
+	<definition name="common/loginForm" extends="login_layout">
+    </definition>
+    
+<!-- 	controller 가 선택할 view 정보 : /definition_name.tiles -->
+	<definition name="abstractDef" template="/WEB-INF/view/mainTemplate.jsp">
+		<put-attribute name="headerMenu" value="/includee/headerMenu.jsp" />
+		<put-attribute name="leftMenu" value="/includee/leftMenu.jsp" />
+		
+		<put-attribute name="footer" value="/includee/footer.jsp"/>
+	</definition>
+	
+	<definition name="index" extends="abstractDef">
+		<put-attribute name="content" value="/WEB-INF/view/main/index.jsp" />
+	</definition>
+	
+	<definition name="*/*" extends="abstractDef">
+		<put-attribute name="content" value="/WEB-INF/view/{1}/{2}.jsp" />
+	</definition>
+	
+	<definition name="draft/*/*" extends="abstractDef">
+		<put-attribute name="content" value="/WEB-INF/view/draft/{1}/{2}.jsp" />
+	</definition>
+	
+	<definition name="empInfo/*/*" extends="abstractDef">
+		<put-attribute name="content" value="/WEB-INF/view/empInfo/{1}/{2}.jsp" />
+	</definition>
+	
+</tiles-definitions>       
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

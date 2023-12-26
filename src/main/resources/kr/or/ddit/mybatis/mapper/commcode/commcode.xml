@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.util.commcode.dao.CommcodeDAO">
+	<select id="itemGroupList" resultType="CommcodeVO">
+	SELECT comm_cd, comm_cd_nm
+	FROM COMM_CD
+	WHERE gr_cd = 'A' AND USE_YN = 'Y'
+	</select>
+	
+	<select id="wareGroupList" resultType="CommcodeVO">
+	SELECT comm_cd, comm_cd_nm
+	FROM COMM_CD
+	WHERE gr_cd = 'E' AND USE_YN = 'Y'
+	</select>
+	
+	<select id="defectGroupList" resultType="CommcodeVO">
+		 SELECT 
+		 	comm_cd 
+		 	, comm_cd_nm
+		 	, USE_YN
+	     FROM 
+	     	comm_cd
+	     WHERE 
+	     	gr_cd = 'F' 
+	     AND USE_YN='Y'
+	</select>
+	
+	<select id="defectTypeGroupList" resultType="CommcodeVO">
+		 SELECT 
+		 	comm_cd 
+		 	, comm_cd_nm
+		 	, USE_YN
+	     FROM 
+	     	comm_cd
+	     WHERE 
+	     	gr_cd = 'R' 
+	     AND USE_YN='Y'
+	</select>
+	
+	
+	<resultMap id="CommCdMap" type="java.util.HashMap">
+	  <id property="commCd" column="COMM_CD"/>
+	  <result property="commCdNm" column="COMM_CD_NM"/>
+	</resultMap>
+
+	<select id="selectCommCdList" parameterType="String" resultMap="CommCdMap">
+		SELECT
+			  COMM_CD
+			, COMM_CD_NM
+		FROM
+			COMM_CD
+		WHERE
+			GR_CD = #{grCd}
+	</select>
+
+	<resultMap id="DeptNoMap" type="java.util.HashMap">
+	  <id property="deptNo" column="DEPT_NO"/>
+	  <result property="deptNm" column="DEPT_NM"/>
+	</resultMap>
+
+
+	<select id="selectDeptNoList" parameterType="String" resultMap="DeptNoMap">
+		SELECT
+		    DEPT_NO
+		  , DEPT_NM
+		FROM
+		    DEPT
+	</select>
+	
+</mapper>

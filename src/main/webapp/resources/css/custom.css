@@ -1,0 +1,13 @@
+@charset "UTF-8";
+
+.searchBtn{
+	border: solid 1.5px #d8e2ef;
+    height: 36px;
+    transition: border-color 0.3s;
+}
+
+.searchBtn:hover {
+	border: solid 1.5px #d8e2ef;
+    height: 36px;
+    transition: border-color 0.3s;
+}

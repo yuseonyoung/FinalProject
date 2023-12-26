@@ -1,0 +1,445 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.order.dao.OrderPlayDAO">
+	<select id="selectCompanyList" resultType="kr.or.ddit.company.vo.CompanyVO">
+		select com_nm, com_cd from com
+	</select>
+
+
+	<insert id="insertPurOrd" parameterType="kr.or.ddit.order.vo.PurOrdVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="pordCd">
+			select 'PO'||LPAD((NVL(MAX(TO_NUMBER(SUBSTR(PORD_CD, 3, 5))), 0)+1),5,'0') 
+			  from PUR_ORD
+		</selectKey>
+		INSERT INTO pur_ord (
+							    pord_cd,
+							    pord_date,
+							    pord_stat,
+							    due_date,
+							    cqte_cd,
+							    pplan_cd,
+							    emp_cd
+							) VALUES (
+							    #{pordCd},
+							    #{pordDate},
+							    'T004',
+							    #{dueDate},
+							    #{cqteCd, jdbcType=VARCHAR},
+							    #{pplanCd, jdbcType=VARCHAR},
+							    #{empCd}
+							)
+	</insert>
+	
+	<insert id="insertPurOrd2" parameterType="kr.or.ddit.order.vo.PurOrdVO">
+		<selectKey order="BEFORE" resultType="hashMap" keyProperty="pordCd,cqteCd">
+			select              
+				(select 'PO'||LPAD((NVL(MAX(TO_NUMBER(SUBSTR(PORD_CD, 3, 5))), 0)+1),5,'0') 
+			  from PUR_ORD) "pordCd"
+			              
+			 	,(select 'CQ'||LPAD((NVL(MAX(TO_NUMBER(SUBSTR(CQTE_CD, 3, 5))), 0)),5,'0') 
+			 		 from COM_QTE) "cqteCd"              
+			from dual
+		</selectKey>
+		INSERT INTO pur_ord (
+							    pord_cd,
+							    pord_date,
+							    pord_stat,
+							    due_date,
+							    cqte_cd,
+							    pplan_cd,
+							    emp_cd
+							) VALUES (
+							    #{pordCd},
+							    #{pordDate},
+							    'T004',
+							    #{dueDate},
+							    #{cqteCd, jdbcType=VARCHAR},
+							    #{pplanCd, jdbcType=VARCHAR},
+							    #{empCd}
+							)
+	</insert>
+	
+	<insert id="insertPurOrdItem" parameterType="kr.or.ddit.order.vo.PurOrdItemVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="pordCd">
+			select 'PO'||LPAD((NVL(MAX(TO_NUMBER(SUBSTR(PORD_CD, 3, 5))), 0)),5,'0') 
+			  from PUR_ORD
+		</selectKey>
+		INSERT INTO pur_ord_item (
+									    item_cd,
+									    pord_cd,
+									    pord_qty,
+									    pord_uprc,
+									    item_in_qty,
+							    		com_cd
+									) VALUES (
+									    #{itemCd},
+									    #{pordCd},
+									    #{pordQty},
+									    #{pordUprc},
+									    #{itemInQty},
+							    		#{comCd}
+									)
+	
+	</insert>
+	
+	<!-- 발주서 리스트 뽑기 -->
+	<resultMap type="kr.or.ddit.order.vo.PurOrdVO" id="orderPlayMap" autoMapping="true">
+		<id property="pordCd" column="PORD_CD"/>
+		<collection property="purOrdItem" ofType="kr.or.ddit.order.vo.PurOrdItemVO" autoMapping="true">
+			<association property="item" javaType="kr.or.ddit.item.vo.ItemVO" autoMapping="true"/>
+		</collection>
+	</resultMap>
+	<select id="selectOrderPlayList" parameterType="string" resultMap="orderPlayMap">
+		select 
+		      po.pord_cd
+		      , item.item_nm
+		      , po.pord_date
+		      , po.due_date
+		      , FN_GET_COMM_CD_NM(po.pord_stat) AS PORD_STAT
+		      , (select count(*) from pur_ord_item where pur_ord_item.pord_cd= po.pord_cd)-1 nQty
+		  from pur_ord po
+		  left outer join pur_ord_item poi
+		               on po.pord_cd=poi.pord_cd
+		  left outer join item item
+		               on item.item_cd=poi.item_cd
+		
+	</select>
+	
+	<!-- 나중에 조건절 추가하거나 아예 로그인한사람만 권한을 갖고있거나 -->
+	<select id="selectResponsibleEmp" parameterType="string" resultType="hashMap">
+		 select 
+			 emp.emp_cd "empCd"
+			 , emp.emp_nm "empNm"
+			 , FN_GET_DEPT_NO_NM(B.DEPT_NO) "deptNm"
+			 
+           from emp emp
+           
+           INNER JOIN HR_INFO B
+			    ON emp.EMP_CD = B.EMP_CD
+			ORDER BY 
+				B.DEPT_NO
+             
+             
+		
+	
+	</select>
+	
+	<select id="selectOrderPlayDetailList" parameterType="string" resultType="hashMap">
+		WITH BBTONG AS(
+		 select  po.pord_cd 
+					, poi.pord_qty 
+					, po.pord_date 
+					, po.due_date 
+		            ,item.item_nm 
+					, item.item_cd 
+					, item.item_unit 
+		            , emp.emp_nm
+					, emp.emp_cd 
+					, com.com_nm 
+					, FN_GET_COMM_CD_NM(po.PORD_STAT) "PORD_STAT"
+		   from pur_ord po
+		   inner join pur_ord_item poi
+					on po.pord_cd=poi.pord_cd
+		   inner join item item
+					on poi.item_cd=item.item_cd
+		   inner join com com
+					on poi.com_cd=com.com_cd
+		   left outer join emp emp
+					on emp.emp_cd=po.emp_cd
+		)
+		select 
+		    bb.item_nm "itemNm"
+					, bb.item_cd "itemCd"
+					, bb.item_unit "itemUnit"
+					, bb.pord_cd "pordCd"
+					, bb.pord_qty "pordQty"
+					, bb.pord_date "pordDate"
+					, bb.due_date "dueDate"
+		            , bb.emp_nm "empNm"
+					, bb.emp_cd "empCd"
+					, bb.com_nm "comNm"
+					, iu.in_uprc "inUprc"
+					, bb.PORD_STAT "pordStat"
+
+		from BBTONG bb
+		left outer join item_uprc iu
+		on iu.item_cd=bb.item_cd and bb.pord_date between iu.uprc_conf and iu.uprc_edate
+		where pord_cd=#{pordCd, jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 발주서 업데이트하기 위해 만든 select문 경우의 수 1  -->
+	<resultMap type="kr.or.ddit.order.vo.ItemUprcVO" id="selectDealCompanyMap" autoMapping="true">
+		<association property="comQte" javaType="kr.or.ddit.order.vo.ComQteVO" autoMapping="true">
+			<association property="company" javaType="kr.or.ddit.company.vo.CompanyVO" autoMapping="true" />
+		</association>
+	</resultMap>
+	<select id="selectDealCompanyList" parameterType="string" resultMap="selectDealCompanyMap">
+			select 
+				cq.com_cd
+				, com.com_nm 
+			
+			  from 
+			    item_uprc iu
+			  
+		inner join com_qte cq
+				on iu.cqte_cd=cq.cqte_cd
+				
+		left outer join com com
+				on com.com_cd=cq.com_cd
+				
+			 where 
+			 	<![CDATA[ iu.uprc_edate>sysdate]]>
+			 
+	      GROUP BY 
+	      		cq.com_cd, com.com_nm
+	</select>	
+	
+	<!-- 발주서 업데이트하기 위해 만든 select문 경우의 수 2  -->
+	<!-- 거래처가 선택되지 않은 상태에서의 품목선택 -->
+	<resultMap type="kr.or.ddit.order.vo.ItemUprcVO" id="selectDealItemMap" autoMapping="true">
+		<association property="item" javaType="kr.or.ddit.item.vo.ItemVO" autoMapping="true"/>
+		<association property="comQte" javaType="kr.or.ddit.order.vo.ComQteVO" autoMapping="true">
+			<association property="company" javaType="kr.or.ddit.company.vo.CompanyVO" autoMapping="true" />
+		</association>
+	</resultMap>
+	<select id="selectDealItemList" parameterType="string" resultMap="selectDealItemMap">
+			select 
+				item.item_nm
+				, iu.item_cd
+				, item.item_unit
+				, iu.in_uprc
+				, cq.com_cd
+				, com.com_nm  
+			  from 
+			  	item_uprc iu
+        inner join com_qte cq
+				on iu.cqte_cd=cq.cqte_cd
+		left outer join com com
+				on com.com_cd=cq.com_cd
+   left outer join item item
+				on iu.item_cd=item.item_cd
+		     where 
+		     	<![CDATA[ iu.uprc_edate>sysdate]]>
+	</select>
+	<!-- 거래처가 선택된 상태에서의 품목선택 -->
+	<resultMap type="kr.or.ddit.order.vo.ItemUprcVO" id="selectDealItemSpecialMap" autoMapping="true">
+		<association property="item" javaType="kr.or.ddit.item.vo.ItemVO" autoMapping="true"/>
+		<association property="comQte" javaType="kr.or.ddit.order.vo.ComQteVO" autoMapping="true" />
+	</resultMap>
+	<select id="selectDealItemSpecialList" parameterType="string" resultMap="selectDealItemSpecialMap">
+		 select 
+		        iu.item_cd 
+		        , item.item_nm 
+		        , item.item_unit
+		        , iu.in_uprc  
+		      from 
+		        item_uprc iu
+		inner join com_qte cq
+		        on iu.cqte_cd=cq.cqte_cd
+		left outer join item item
+		        on iu.item_cd= item.item_cd
+		     where <![CDATA[ iu.uprc_edate>sysdate]]> and cq.com_cd=#{comCd}
+		
+	</select>
+	
+	<!-- 발주서 업데이트하기 위해 만든 select문 경우의 수 3  -->
+
+	<!-- 입고예정을 위한 select문 -->
+	<select id="selectPurOrderList" resultType="java.util.Map" >
+		SELECT
+	        a.pord_cd "pordCd", a.pord_date "pordDate", FN_GET_COMM_CD_NM(a.pord_stat) "pordStat",
+	        a.due_date "dueDate",a.cqte_cd "cqteCd",a.pplan_cd "pplanCd",
+	        a.emp_cd "empCd",b.com_cd "comCd",b.item_cd "itemCd",
+	        b.pord_qty "pordQty", c.item_nm "itemNm", d.emp_nm "empNm",e.com_nm "comNm"
+	    FROM
+	        pur_ord a inner join pur_ord_item b on(a.pord_cd = b.pord_cd)
+	                  inner join item c on(c.item_cd = b.item_cd)
+	                  inner join emp d on(a.emp_cd = d.emp_cd)      
+	                  inner join com e on(b.com_cd = e.com_cd)
+	        where a.pord_stat ='T001'         
+	    order by a.pord_stat, a.pord_cd desc
+	</select>
+	
+	<!-- 입고 예정 상세보기  -->
+	<select id="purOrderDetail" parameterType="string" resultType="map">
+		  select 
+	        a.pord_cd "pordCd",a.pord_date "pordDate",a.pord_stat "pordStat",a.due_date "dueDate",a.cqte_cd "cqteCd",a.emp_cd "empCd"
+	        ,b.com_cd "comCd",b.item_cd "itemCd",b.item_in_qty "itemInQty",b.pord_qty "pordQty",b.pord_uprc "pordUprc",(b.pord_qty*b.pord_uprc) as multiply
+	        ,c.emp_nm "empNm"
+	        ,d.item_nm "itemNm",d.item_unit "itemUnit"
+	        ,e.com_nm "comNm"
+	        ,(select sum(pord_qty)
+		     from pur_ord_item
+		     where pord_cd = #{prodCd}) "countQty"
+		    ,(select (sum(pord_qty*pord_uprc)) 
+		      from pur_ord_item
+		      where pord_cd =#{pordCd}
+		     ) "sumValue"
+	    from 
+	        pur_ord a 
+	        inner join pur_ord_item b on(a.pord_cd = b.pord_cd)
+	        inner join emp c on(a.emp_cd = c.emp_cd)       
+	        inner join item d on(b.item_cd = d.item_cd)
+	        inner join com e on(b.com_cd = e.com_cd)
+	    where a.pord_cd=#{pordCd}    
+	</select>
+	
+	<!-- 입고 처리 폼 -->
+	<select id="purOrderConfirmed" resultType="map">
+		select a.pord_cd "pordCd",a.pord_date "pordDate",a.due_date "dueDate",a.emp_cd "empCd"
+		    ,b.item_cd "itemCd",b.pord_qty "pordQty",b.com_cd "comCd",b.item_in_qty "itemInQty"  
+		    ,c.emp_nm "empNm"
+		    ,d.com_nm "comNm" 
+		    ,e.item_nm "itemNm"		    
+		from pur_ord a inner join pur_ord_item b on(a.pord_cd = b.pord_cd)    
+		               inner join emp c on(a.emp_cd = c.emp_cd)
+		               inner join com d on(b.com_cd = d.com_cd)
+		               inner join item e on(b.item_cd = e.item_cd)
+		where a.pord_stat = 'T001'            
+		order by a.pord_cd desc
+	</select>
+	
+	<!-- 추가 -->
+	<sql id="searchFrag">
+        <where>
+            <if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+                <choose>
+                    <when test="simpleCondition.searchType eq 'pordCd'">
+                        INSTR(po.pord_cd, #{simpleCondition.searchWord}) > 0
+                    </when>
+                    <when test="simpleCondition.searchType eq 'itemNm'">
+                        INSTR(item.item_nm, #{simpleCondition.searchWord}) > 0
+                    </when>
+                    <when test="simpleCondition.searchType eq 'empNm'">
+                        INSTR(emp.emp_nm, #{simpleCondition.searchWord}) > 0
+                    </when>
+                    <otherwise>
+                        INSTR(po.pord_cd, #{simpleCondition.searchWord}) > 0
+                        OR
+                        INSTR(item.item_nm, #{simpleCondition.searchWord}) > 0
+                        OR
+                        INSTR(emp.emp_nm, #{simpleCondition.searchWord}) > 0
+                    </otherwise>
+                </choose>
+            </if>
+        </where>
+    </sql>
+    <select id="selectTotalRecord" parameterType="kr.or.ddit.paging.vo.PaginationInfo" resultType="int">
+        SELECT COUNT(*)
+		  FROM(        
+		    SELECT pord_cd_alias
+		      FROM (
+		        SELECT po.pord_cd AS pord_cd_alias, item.*
+		        FROM PUR_ORD po
+		        INNER JOIN PUR_ORD_ITEM poi ON po.pord_cd = poi.pord_cd
+		        INNER JOIN item ON poi.item_cd = item.item_cd
+		        INNER JOIN emp on emp.emp_cd=po.emp_cd
+		         <include refid="searchFrag" />
+		        )
+		group by pord_cd_alias
+		)
+    </select>
+    <select id="selectOrderPlayList2" parameterType="kr.or.ddit.paging.vo.PaginationInfo" resultMap="orderPlayMap">
+    	SELECT UR.*
+			FROM (
+			    SELECT A.*, ROWNUM AS rnum
+			    FROM (
+			       select 
+					      po.pord_cd
+					      ,MIN(item.item_nm) AS "item.item_nm"
+					      , po.pord_date
+					      , po.due_date
+					      , FN_GET_COMM_CD_NM(po.pord_stat) AS PORD_STAT
+					      , (select count(*) from pur_ord_item where pur_ord_item.pord_cd= po.pord_cd)-1 nQty
+					  from pur_ord po
+						  INNER JOIN PUR_ORD_ITEM poi ON po.pord_cd = poi.pord_cd
+				        INNER JOIN item item ON poi.item_cd = item.item_cd
+				        INNER JOIN emp emp on emp.emp_cd=po.emp_cd
+				         <include refid="searchFrag" />
+				         GROUP BY
+				          po.pord_cd
+					      , po.pord_date
+					      , po.due_date
+					      , po.pord_stat
+			               order by po.pord_date desc
+			    ) A
+			) UR
+			<![CDATA[ WHERE RNUM >= #{startRow} AND RNUM <= #{endRow} ]]>
+			ORDER BY UR.rnum
+	</select>
+	
+	<update id="purOderStatUpdate" parameterType="string">	  
+        	UPDATE pur_ord
+	        SET
+	            pord_stat = 'T002'
+	        WHERE
+	           	pord_cd = #{pordCd}
+	</update>
+	
+	<sql id="whereFrag">
+		<trim prefix="WHERE" prefixOverrides="AND">
+	        <if test="empCd != null and empCd != ''">
+	            AND emp.emp_cd = #{empCd}
+	        </if>
+	        <if test="itemList.size() > 0">
+	            AND (
+	                <foreach collection="itemList" item="item" separator=" OR ">
+	                    <if test="item != null">
+	                        item.item_cd = #{item.itemCd}
+	                    </if>
+	                </foreach>
+	            )
+	        </if>
+	        <if test="preqSdate != null and preqSdate != '' and preqLdate != null and preqLdate != ''">
+	            and po.pord_date BETWEEN #{preqSdate} and #{preqLdate}
+	        </if>
+	        <if test="preqStat !=null and preqStat !=''">
+	        	and po.pord_stat = #{preqStat} 
+	        </if>
+		</trim>
+	</sql>
+	
+	<select id="orderPlayCurrentList" resultType="java.util.Map" parameterType="java.util.Map">
+		select 
+	        po.pord_cd
+	        , po.pord_date
+	        , po.due_date
+	        , FN_GET_COMM_CD_NM(po.pord_stat) as pord_stat
+	        , poi.pord_qty
+	        , item.item_nm
+	        , item.item_cd
+	        , emp.emp_nm
+	        , emp.emp_cd
+		  from pur_ord po
+		  inner join pur_ord_item poi
+		          on po.pord_cd=poi.pord_cd
+		  inner join emp emp
+		          on po.emp_cd=emp.emp_cd
+		  inner join item item
+		          on poi.item_cd=item.item_cd
+		  <include refid="whereFrag"/>
+		  order by po.pord_date desc
+	
+	</select>
+	
+	<select id="selectOrderPlay" resultType="java.util.Map">
+		select 
+	        po.pord_cd
+	        , po.pord_date
+	        , po.due_date
+	        , FN_GET_COMM_CD_NM(po.pord_stat) as pord_stat
+	        , poi.pord_qty
+	        , item.item_nm
+	        , item.item_cd
+	        , emp.emp_nm
+	        , emp.emp_cd
+		  from pur_ord po
+		  inner join pur_ord_item poi
+		          on po.pord_cd=poi.pord_cd
+		  inner join emp emp
+		          on po.emp_cd=emp.emp_cd
+		  inner join item item
+		          on poi.item_cd=item.item_cd
+                 where  po.pord_cd = #{pordCd}
+	</select>
+</mapper>

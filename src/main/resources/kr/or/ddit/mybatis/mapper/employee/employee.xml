@@ -1,0 +1,367 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- [[개정이력(Modification Information)]] -->
+<!-- 수정일 수정자 수정내용 -->
+<!-- ========== ====== ============== -->
+<!-- 2023. 11. 10.} 이수정 최초작성 -->
+<!-- 2023. 11. 27.} 우정범 쿼리추가 -->
+<!-- Copyright (c) 2023 by DDIT All right reserved -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.employee.dao.EmpDAO">
+
+	<resultMap type="kr.or.ddit.employee.vo.EmpVO" id="HRInfo"
+		autoMapping="true">
+		<id property="empCd" column="EMP_CD" />
+		<association property="empCd" javaType="EmpVO"
+			autoMapping="true">
+			<association property="dept" autoMapping="true" />
+		</association>
+	</resultMap>
+
+
+	<sql id="searchFrag">
+		<where>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+				<choose>
+					<when test="simpleCondition.searchType eq 'empcd'">
+						INSTR(EMP_CD, #{simpleCondition.searchWord}) > 0
+					</when>
+					<when test="simpleCondition.searchType eq 'name'">
+						INSTR(EMP_NM, #{simpleCondition.searchWord}) > 0
+					</when>
+					<when test="simpleCondition.searchType eq 'department'">
+						INSTR(DEPT_NM, #{simpleCondition.searchWord}) > 0
+					</when>
+					<otherwise>
+						INSTR(EMP_CD, #{simpleCondition.searchWord}) > 0
+						OR
+						INSTR(EMP_NM, #{simpleCondition.searchWord}) > 0
+						OR
+						INSTR(DEPT_NM, #{simpleCondition.searchWord}) > 0
+					</otherwise>
+				</choose>
+			</if>
+		</where>
+	</sql>
+
+	<select id="selectTotalRecord" resultType="int"
+		parameterType="PaginationInfo">
+		SELECT COUNT(*) FROM
+		(
+		SELECT
+		A.EMP_CD,
+		A.EMP_PW,
+		A.EMP_NM,
+		A.EMP_TEL_NO,
+		A.EMP_MAIL,
+		A.EMP_BIRTH,
+		A.EMP_ZIP,
+		A.EMP_ADDR,
+		A.EMP_DADDR,
+		A.EMP_IMG,
+		A.EMP_SIGN,
+		A.MSG_STAT,
+		A.EMP_GEND,
+		A.EMP_USE,
+		A.EMP_AUTH,
+		FN_GET_DEPT_NO_NM(HR_INFO.DEPT_NO) AS DEPT_NM,
+		HR_INFO.HR_CHARGE
+		FROM EMP A
+		LEFT OUTER JOIN DEPT ON (A.EMP_CD = DEPT.EMP_CD)
+		LEFT OUTER JOIN HR_INFO ON (A.EMP_CD = HR_INFO.EMP_CD)
+		WHERE A.EMP_PW IS NOT NULL
+		)
+		<include refid="searchFrag" />
+	</select>
+
+	<select id="selectEmployeeList"
+		resultType="kr.or.ddit.employee.vo.EmpVO">
+		SELECT D.*
+		FROM
+		(
+		SELECT C.*, ROWNUM RN
+		FROM (
+		SELECT
+		ROW_NUMBER() OVER (ORDER BY A.EMP_CD) AS RNUM,
+		A.EMP_CD,
+		A.EMP_PW,
+		A.EMP_NM,
+		A.EMP_TEL_NO,
+		A.EMP_MAIL,
+		A.EMP_BIRTH,
+		A.EMP_ZIP,
+		A.EMP_ADDR,
+		A.EMP_DADDR,
+		A.EMP_IMG,
+		A.EMP_SIGN,
+		A.MSG_STAT,
+		A.EMP_GEND,
+		A.EMP_USE,
+		A.EMP_AUTH,
+		FN_GET_DEPT_NO_NM(HR_INFO.DEPT_NO) AS DEPT_NM,
+		HR_INFO.HR_CHARGE,
+		FN_GET_COMM_CD_NM(HR_INFO.HR_CHARGE) AS HR_CHARGE_NM,
+		HR_INFO.HR_GRADE,
+		FN_GET_COMM_CD_NM(HR_INFO.HR_GRADE) AS HR_GRADE_NM
+		FROM EMP A
+		LEFT OUTER JOIN DEPT ON (A.EMP_CD = DEPT.EMP_CD)
+		LEFT OUTER JOIN HR_INFO ON (A.EMP_CD = HR_INFO.EMP_CD)
+		WHERE A.EMP_PW IS NOT NULL
+		) C
+		<include refid="searchFrag" />
+		)D
+ <![CDATA[
+		WHERE RN >= #{startRow} AND RN <= #{endRow}
+		]]>
+	</select>
+
+	<select id="selectEmpList"
+		resultType="kr.or.ddit.employee.vo.EmpVO">
+		SELECT
+		A.EMP_CD,
+		A.EMP_PW,
+		A.EMP_NM,
+		A.EMP_TEL_NO,
+		A.EMP_MAIL,
+		A.EMP_BIRTH,
+		A.EMP_ZIP,
+		A.EMP_ADDR,
+		A.EMP_DADDR,
+		A.EMP_IMG,
+		A.EMP_SIGN,
+		A.MSG_STAT,
+		A.EMP_GEND,
+		A.EMP_USE,
+		A.EMP_AUTH,
+		A.EMP_CD,
+
+		DEPT.DEPT_NO,
+		DEPT.DEPT_YN,
+		DEPT.DEPT_REG_DATE,
+		DEPT.DEPT_DEL_DATE,
+
+		HR_INFO.DEPT_NO,
+		FN_GET_DEPT_NO_NM(HR_INFO.DEPT_NO) AS DEPT_NM,
+		HR_INFO.HR_GRADE,
+		FN_GET_COMM_CD_NM(HR_INFO.HR_GRADE) AS HR_GRADE_NM,
+		HR_INFO.HR_CHARGE,
+		FN_GET_COMM_CD_NM(HR_INFO.HR_CHARGE) AS HR_CHARGE_NM,
+		HR_INFO.HR_SAL,
+		HR_INFO.HR_BANK,
+		HR_INFO.HR_BANK_NO,
+		HR_INFO.HR_SDATE,
+		HR_INFO.HR_EDATE,
+		HR_INFO.HR_STAT,
+		HR_INFO.HR_MIL_YN
+		FROM EMP A
+		LEFT OUTER JOIN DEPT ON (A.EMP_CD = DEPT.EMP_CD)
+		LEFT OUTER JOIN HR_INFO ON (A.EMP_CD = HR_INFO.EMP_CD)
+	</select>
+
+	<select id="selectEmp" parameterType="String"
+		resultType="kr.or.ddit.employee.vo.EmpVO">
+		SELECT
+		A.EMP_CD,
+		A.EMP_PW,
+		A.EMP_NM,
+		A.EMP_TEL_NO,
+		A.EMP_MAIL,
+		A.EMP_BIRTH,
+		A.EMP_ZIP,
+		A.EMP_ADDR,
+		A.EMP_DADDR,
+		A.EMP_IMG,
+		A.EMP_SIGN,
+		A.MSG_STAT,
+		A.EMP_GEND,
+		A.EMP_USE,
+		A.EMP_AUTH,
+		A.EMP_CD,
+		DEPT.DEPT_REG_DATE,
+		DEPT.DEPT_DEL_DATE,
+		FN_GET_DEPT_NO_NM(HR_INFO.DEPT_NO) AS DEPT_NM,
+		HR_INFO.DEPT_NO,
+		FN_GET_COMM_CD_NM(HR_INFO.HR_GRADE) AS HR_GRADE_NM,
+		HR_INFO.HR_CHARGE,
+		FN_GET_COMM_CD_NM(HR_INFO.HR_CHARGE) AS HR_CHARGE_NM,
+		HR_INFO.HR_SAL,
+		HR_INFO.HR_BANK,
+		HR_INFO.HR_BANK_NO,
+		HR_INFO.HR_SDATE,
+		HR_INFO.HR_EDATE,
+		HR_INFO.HR_STAT,
+		HR_INFO.HR_MIL_YN
+		FROM EMP A
+		LEFT OUTER JOIN DEPT ON (A.EMP_CD = DEPT.EMP_CD)
+		LEFT OUTER JOIN HR_INFO ON (A.EMP_CD = HR_INFO.EMP_CD)
+		WHERE A.EMP_CD=#{empCd,jdbcType=VARCHAR}
+	</select>
+
+	<resultMap type="kr.or.ddit.employee.vo.EmpVO"
+		id="empListMap" autoMapping="true">
+		<id property="empCd" column="EMP_CD" />
+		<association property="dept" autoMapping="true" />
+	</resultMap>
+	<select id="commEmpList" resultMap="empListMap">
+		SELECT
+		A.EMP_CD
+		, A.EMP_NM
+		, A.EMP_TEL_NO
+		, A.EMP_MAIL
+		, A.EMP_IMG
+		, B.DEPT_NO
+		, FN_GET_DEPT_NO_NM(B.DEPT_NO) AS DEPT_NM
+		FROM EMP A
+		INNER JOIN HR_INFO B
+		ON A.EMP_CD = B.EMP_CD
+		ORDER BY
+		B.DEPT_NO
+	</select>
+
+	<select id="idCheck" parameterType="String">
+		SELECT EMP_CD
+		FROM EMP
+		WHERE EMP_CD = #{empCd,jdbcType=VARCHAR}
+	</select>
+
+	<insert id="insertEmp"
+		parameterType="kr.or.ddit.employee.vo.EmpVO">
+		UPDATE EMP
+		SET
+		EMP_PW = #{empPw,jdbcType=VARCHAR}
+		,EMP_AUTH=#{empAuth,jdbcType=VARCHAR}
+
+		WHERE
+		EMP_CD=#{empCd,jdbcType=VARCHAR}
+	</insert>
+
+	<update id="updateEmp"
+		parameterType="kr.or.ddit.employee.vo.EmpVO">
+		UPDATE EMP
+		SET
+		EMP_AUTH=#{empAuth,jdbcType=VARCHAR}
+		WHERE
+		EMP_CD=#{empCd,jdbcType=VARCHAR}
+	</update>
+
+
+	<update id="updatePw"
+		parameterType="kr.or.ddit.employee.vo.EmpVO">
+		UPDATE EMP
+		SET EMP_PW = #{empPw,jdbcType=VARCHAR}
+		WHERE EMP_CD = #{empCd,jdbcType=VARCHAR}
+	</update>
+
+	<select id="newEmpList" resultType="empVO">
+		SELECT
+		EMP_CD,
+		EMP_NM
+		FROM EMP
+		WHERE EMP_PW IS NULL
+		AND EMP_AUTH IS NULL
+	</select>
+
+	<resultMap type="kr.or.ddit.employee.vo.EmpVO" id="empMap">
+		<result property="empCd" column="EMP_CD" />
+		<result property="empPw" column="EMP_PW" />
+		<result property="empNm" column="EMP_NM" />
+		<result property="empTelNo" column="EMP_TEL_NO" />
+		<result property="empMail" column="EMP_MAIL" />
+		<result property="empBirth" column="EMP_BIRTH" />
+		<result property="empZip" column="EMP_ZIP" />
+		<result property="empAddr" column="EMP_ADDR" />
+		<result property="empDaddr" column="EMP_DADDR" />
+		<result property="empImg" column="EMP_IMG" />
+		<result property="empSign" column="EMP_SIGN" />
+		<result property="empGend" column="EMP_GEND" />
+		<result property="msgStat" column="MSG_STAT" />
+		<result property="empUse" column="EMP_USE" />
+
+		<result property="deptNo" column="DEPT_NO" />
+		<result property="hrGrade" column="HR_GRADE" />
+		<result property="hrGradeNm" column="HR_GRADE_NM" />
+		<result property="hrCharge" column="HR_CHARGE" />
+		<result property="hrChargeNm" column="HR_CHARGE_NM" />
+		<result property="hrSal" column="HR_SAL" />
+		<result property="hrBank" column="HR_BANK" />
+		<result property="hrBankNo" column="HR_BANK_NO" />
+		<result property="hrSdate" column="HR_SDATE" />
+		<result property="hrEdate" column="HR_EDATE" />
+		<result property="hrStat" column="HR_STAT" />
+		<result property="hrStatNm" column="HR_STAT_NM" />
+		<result property="hrMilYn" column="HR_MIL_YN" />
+		<result property="hrMilYnNm" column="HR_MIL_YN_NM" />
+
+		<result property="deptNm" column="DEPT_NM" />
+	</resultMap>
+
+	<!-- 직원정보 조회, 권한정보 포함 -->
+	<select id="detailEmp"
+		parameterType="kr.or.ddit.employee.vo.EmpVO" resultMap="empMap">
+		SELECT
+		A.EMP_CD
+		, A.EMP_PW
+		, A.EMP_NM
+		, A.EMP_BIRTH
+		, A.EMP_IMG
+		, A.EMP_SIGN
+		, A.EMP_TEL_NO
+		, A.EMP_MAIL
+		, A.EMP_ZIP
+		, A.EMP_ADDR
+		, A.EMP_DADDR
+		, A.EMP_USE
+		, A.MSG_STAT
+		, A.EMP_GEND
+		, C.DEPT_NO
+		, C.HR_GRADE
+		, C.HR_CHARGE
+		, C.HR_SAL
+		, C.HR_BANK_NO
+		, C.HR_BANK
+		, C.HR_SDATE
+		, C.HR_EDATE
+		, C.HR_STAT
+		, C.HR_MIL_YN
+		, FN_GET_COMM_CD_NM(A.MSG_STAT) AS MSG_STAT_NM
+		, FN_GET_DEPT_NO_NM(C.DEPT_NO) AS DEPT_NM
+		, FN_GET_COMM_CD_NM(C.HR_GRADE) AS HR_GRADE_NM
+		, FN_GET_COMM_CD_NM(C.HR_CHARGE) AS HR_CHARGE_NM
+		, FN_GET_COMM_CD_NM(C.HR_STAT) AS HR_STAT_NM
+		, FN_GET_COMM_CD_NM(C.HR_MIL_YN) AS HR_MIL_YN_NM
+		FROM
+		EMP A
+		INNER JOIN
+		HR_INFO C ON A.EMP_CD = C.EMP_CD
+		WHERE A.EMP_CD = #{empCd}
+	</select>
+
+
+	<!-- 직원정보 조회 -->
+	<select id="detail" parameterType="kr.or.ddit.employee.vo.EmpVO"
+		resultType="kr.or.ddit.employee.vo.EmpVO">
+		SELECT
+		EMP_CD
+		, EMP_PW
+		, EMP_NM
+		, EMP_TEL_NO
+		, EMP_MAIL
+		, EMP_BIRTH
+		, EMP_ZIP
+		, EMP_ADDR
+		, EMP_DADDR
+		, EMP_IMG
+		, EMP_SIGN
+		, EMP_GEND
+		, MSG_STAT
+		, EMP_USE
+		FROM
+		EMP
+		WHERE EMP_CD = #{empCd}
+	</select>
+
+
+	<select id="getName" parameterType="String" resultType="String">
+		SELECT EMP_NM FROM EMP WHERE EMP_CD=#{empCd}
+	</select>
+</mapper>

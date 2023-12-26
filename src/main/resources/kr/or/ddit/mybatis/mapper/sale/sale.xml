@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.sale.dao.SaleDAO">
+	
+	<resultMap type="kr.or.ddit.sale.vo.SaleVO" id="saleMap" autoMapping="true">
+		<id property="saleCd" column="SALE_CD"/>
+		<association property="employee" autoMapping="true"/>
+	    <association property="company" autoMapping="true"/>
+		 <collection property="saleItem" ofType="kr.or.ddit.sale.vo.SaleItemVO" autoMapping="true">
+	        <association property="item" autoMapping="true"/>
+	    </collection>
+	</resultMap>
+	
+	<select id="selectSaleList" resultMap="saleMap">
+		
+			SELECT 
+				A.SALE_CD,
+				A.SALE_DATE,
+				A.EMP_CD,
+				A.COM_CD,
+				B.SALE_UPRC,
+				B.SALE_QTY,
+				B.ITEM_CD,
+				C.ITEM_NM,
+				D.EMP_NM,
+				E.COM_NM,
+				FN_GET_COMM_CD_NM(A.SALE_STAT) "SALE_STAT"
+			FROM
+				SALE A
+			JOIN
+				SALE_ITEM B ON A.SALE_CD = B.SALE_CD
+			JOIN
+				ITEM C ON C.ITEM_CD = B.ITEM_CD
+			JOIN
+				EMP D ON A.EMP_CD = D.EMP_CD
+			JOIN
+				COM E ON A.COM_CD = E.COM_CD
+			ORDER BY
+        		A.SALE_CD DESC
+	</select>
+
+	<select id="selectSale" parameterType="string" resultMap="saleMap">
+			SELECT
+				A.SALE_CD,
+				A.SALE_DATE,
+				A.EMP_CD,
+				A.COM_CD,
+				B.SALE_UPRC,
+				B.SALE_QTY,
+				B.ITEM_CD,
+				C.ITEM_NM,
+				D.EMP_NM,
+				E.COM_NM
+			FROM
+				SALE A
+			JOIN
+				SALE_ITEM B ON A.SALE_CD = B.SALE_CD
+			JOIN
+                ITEM C ON C.ITEM_CD = B.ITEM_CD
+            JOIN
+				EMP D ON A.EMP_CD = D.EMP_CD
+			JOIN
+				COM E ON A.COM_CD = E.COM_CD
+			WHERE A.SALE_CD = #{saleCd}
+	</select>
+	
+	<!-- 
+	견적서코드를 조건으로 품목아이템 목록을 가져오자
+	 -->
+	<select id="getQteItemList" parameterType="String" resultType="QuoteItemVO">
+		SELECT A.QTE_CD, A.ITEM_CD
+		     , (SELECT B.ITEM_NM FROM ITEM B WHERE B.ITEM_CD = A.ITEM_CD) ITEM_NM
+		     , A.QTE_UPRC, A.QTE_QTY
+		FROM   QTE_ITEM A
+		WHERE  A.QTE_CD = #{qteCd}
+	</select>
+	
+	
+	
+	
+	<insert id="insertSale" parameterType="SaleVO">
+	<selectKey order="BEFORE" resultType="string"  keyProperty="saleCd">
+			select 'S'||LPAD(NVL(MAX(TO_NUMBER(SUBSTR(sale_cd, 2, 5))),0)+1,3,0)
+	        from sale
+		</selectKey>
+		INSERT INTO SALE(
+			SALE_CD
+			,SALE_DATE
+			,SALE_STAT
+			,EMP_CD
+			,COM_CD
+		)VALUES(
+			#{saleCd,jdbcType=VARCHAR}
+			,#{saleDate,jdbcType=VARCHAR}
+			,#{saleStat,jdbcType=VARCHAR}
+			,#{empCd,jdbcType=VARCHAR}
+			,#{comCd,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<insert id="insertSaleItem" parameterType="SaleItemVO">
+
+		INSERT INTO SALE_ITEM(
+			SALE_CD
+			,ITEM_CD
+			,SALE_UPRC
+			,SALE_QTY
+		)VALUES(
+			#{saleCd,jdbcType=VARCHAR}
+			,#{itemCd,jdbcType=VARCHAR}
+			,#{saleUprc,jdbcType=VARCHAR}
+			,#{saleQty,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<update id="updateSale" parameterType="SaleVO">
+		UPDATE
+			SALE
+		SET
+			SALE_DATE = #{saleDate}
+			,EMP_CD = #{empCd}
+			,COM_CD = #{comCd}
+		WHERE
+			SALE_CD = #{saleCd}
+	</update>
+	
+	<update id="updateSaleItem" parameterType="SaleItemVO">
+		UPDATE
+			SALE_ITEM
+		SET
+			ITEM_CD = #{itemCd}
+			,SALE_UPRC = #{saleUprc}
+			,SALE_QTY = #{saleQty}
+		WHERE
+			SALE_CD = #{saleCd}
+	</update>
+	
+	<delete id="deleteSaleItem" parameterType="SaleItemVO">
+		DELETE FROM
+			SALE_ITEM
+		WHERE
+			SALE_CD = #{saleCd}
+	</delete>
+</mapper>
+
+
+

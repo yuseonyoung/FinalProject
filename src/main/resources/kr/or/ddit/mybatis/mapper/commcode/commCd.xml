@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.common.dao.CommCdDao">
+
+<!-- 공통코드 목록 -->
+	<select id="groupCodeList" resultType="kr.or.ddit.common.vo.GrpCdVO">
+		SELECT
+			ROWNUM
+			, GR_CD
+			, GR_NM
+			, USE_YN
+			, GR_CATE
+		FROM
+			GRP_CD
+		ORDER BY GR_CD ASC
+	</select>
+	
+	<!-- 공통상세코드 목록 -->
+	<select id="commonCodeList" parameterType="String" resultType="kr.or.ddit.common.vo.CommCdVO">
+		SELECT
+			ROWNUM
+			, COMM_CD
+			, GR_CD
+			, COMM_CD_NM
+			, EMP_CD
+			, COMM_RDATE
+			, USE_YN
+		FROM
+			COMM_CD
+		ORDER BY COMM_CD
+	</select>
+	
+	<!-- 공통 코드 명칭 -->
+	<select id="commonCodeName" parameterType="String" resultType="kr.or.ddit.common.vo.CommCdVO">
+		SELECT DISTINCT
+		       A.GR_CD
+		      , B.GR_NM
+		FROM
+			COMM_CD A
+		INNER JOIN GRP_CD B ON A.GR_CD = B.GR_CD
+		ORDER BY B.GR_NM
+	</select>
+	
+	<!-- 사용자 상세코드 최대값 확인 -->
+	<select id="maxCommonCode" parameterType="map" resultType="String">
+		SELECT
+			MAX(COMM_CD)
+		FROM
+			COMM_CD
+		WHERE
+			GR_CD = #{grCd}
+	</select>
+	
+	<insert id="createCommonCode" parameterType="kr.or.ddit.common.vo.CommCdVO">
+		INSERT INTO
+			COMM_CD
+		(COMM_CD
+			, GR_CD
+			, COMM_CD_NM
+			, EMP_CD
+			, COMM_RDATE
+			, USE_YN)
+		VALUES(#{commCd}
+		, #{grCd}
+		, #{commCdNm}
+		, #{empCd}
+		, SYSDATE
+		, 'Y'
+		   )
+	</insert>
+	
+	<update id="codeAct" parameterType="String">
+		UPDATE COMM_CD
+		SET
+		    USE_YN = CASE
+		        WHEN USE_YN = 'Y' THEN 'N'
+		        WHEN USE_YN = 'N' THEN 'Y'
+		    END
+		WHERE
+		    GR_CD = #{grCd}
+	</update>
+
+
+</mapper>

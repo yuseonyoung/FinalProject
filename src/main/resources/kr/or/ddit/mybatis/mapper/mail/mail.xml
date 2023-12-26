@@ -1,0 +1,495 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- [[개정이력(Modification Information)]] -->
+<!-- 수정일 수정자 수정내용 -->
+<!-- ========== ====== ============== -->
+<!-- 2023. 11. 15.} 이수정 최초작성 -->
+<!-- Copyright (c) 2023 by DDIT All right reserved -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mail.dao.MailDAO">
+
+
+	<sql id="searchFrag">
+		<where>
+			<if
+				test="@org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+				<choose>
+					<when test="simpleCondition.searchType eq 'title'">
+						INSTR(MAIL_TITLE, #{simpleCondition.searchWord}) >
+						0
+					</when>
+					<when test="simpleCondition.searchType eq 'writer'">
+						INSTR(SEN_NM, #{simpleCondition.searchWord}) > 0
+					</when>
+					<when test="simpleCondition.searchType eq 'content'">
+						INSTR(MAIL_CONT, #{simpleCondition.searchWord}) > 0
+					</when>
+					<otherwise>
+						INSTR(MAIL_TITLE, #{simpleCondition.searchWord}) > 0
+						OR
+						INSTR(SEN_NM, #{simpleCondition.searchWord}) > 0
+						OR
+						INSTR(MAIL_CONT, #{simpleCondition.searchWord}) > 0
+					</otherwise>
+				</choose>
+			</if>
+		</where>
+	</sql>
+
+
+	<select id="selectTotalRecord" resultType="int"
+		parameterType="PaginationInfo">
+		SELECT COUNT(*)
+		FROM(
+		SELECT C.MAIL_SEN, EMP_NM AS "SEN_NM", MAIL_TITLE,
+		MAIL_CONT
+		FROM
+		(
+		SELECT A.MAIL_NO, B.MAIL_REC, A.MAIL_TITLE, A.MAIL_CONT,
+		B.EMP_CMAIL,
+		B.REC_DEL, A.MAIL_DEL, MAIL_SEN
+		FROM
+		MAIL A
+		INNER JOIN
+		(SELECT MAIL_NO, MAIL_REC, EMP_NM , EMP_CMAIL, REC_DEL
+		FROM MAIL_IN
+		LEFT OUTER JOIN EMP ON EMP_CD=MAIL_REC) B
+		ON A.MAIL_NO=B.MAIL_NO
+		LEFT
+		OUTER JOIN EMP C ON A.MAIL_SEN=C.EMP_CD
+		WHERE
+		B.MAIL_REC=#{empCd}
+		AND
+		A.MAIL_DEL='N'
+		)C
+		INNER JOIN EMP ON EMP_CD=C.MAIL_SEN
+		)
+		<include refid="searchFrag" />
+	</select>
+
+	<select id="selectTotalSRecord" resultType="int"
+		parameterType="PaginationInfo">
+		SELECT COUNT(*)
+		FROM(
+		SELECT C.MAIL_SEN, EMP_NM AS "SEN_NM", MAIL_TITLE,
+		MAIL_CONT
+		FROM
+		(
+		SELECT A.MAIL_NO, B.MAIL_REC, A.MAIL_TITLE, A.MAIL_CONT,
+		B.EMP_CMAIL,
+		B.REC_DEL, A.MAIL_DEL, MAIL_SEN
+		FROM
+		MAIL A
+		INNER JOIN
+		(SELECT MAIL_NO, MAIL_REC, EMP_NM , EMP_CMAIL, REC_DEL
+		FROM MAIL_IN
+		LEFT OUTER JOIN EMP ON EMP_CD=MAIL_REC) B
+		ON A.MAIL_NO=B.MAIL_NO
+		LEFT
+		OUTER JOIN EMP C ON A.MAIL_SEN=C.EMP_CD
+		WHERE
+		A.MAIL_SEN=#{empCd}
+		AND
+		B.REC_DEL='N'
+		)C
+		INNER JOIN EMP ON EMP_CD=C.MAIL_SEN
+		)
+		<include refid="searchFrag" />
+	</select>
+
+	<select id="selectTotalURecord">
+		SELECT COUNT(*)
+		FROM(
+		SELECT C.MAIL_SEN, EMP_NM AS "SEN_NM", MAIL_TITLE,
+		MAIL_CONT
+		FROM
+		(
+		SELECT A.MAIL_NO, B.MAIL_REC, A.MAIL_TITLE, A.MAIL_CONT,
+		B.EMP_CMAIL,
+		B.REC_DEL, A.MAIL_DEL, MAIL_SEN
+		FROM
+		MAIL A
+		INNER JOIN
+		(SELECT MAIL_NO, MAIL_REC, EMP_NM , EMP_CMAIL, REC_DEL
+		FROM MAIL_IN
+		LEFT OUTER JOIN EMP ON EMP_CD=MAIL_REC) B
+		ON A.MAIL_NO=B.MAIL_NO
+		LEFT
+		OUTER JOIN EMP C ON A.MAIL_SEN=C.EMP_CD
+		WHERE
+		B.MAIL_REC=#{empCd}
+		AND
+		A.MAIL_DEL='N'
+		AND A.MAIL_READ='N'
+		)C
+		INNER JOIN EMP ON EMP_CD=C.MAIL_SEN
+		)
+		<include refid="searchFrag" />
+	</select>
+
+	<!-- 받은메일 -->
+	<select id="selectMailList"
+		parameterType="kr.or.ddit.paging.vo.PaginationInfo"
+		resultType="kr.or.ddit.mail.vo.MailVO">
+
+		SELECT E.*
+		FROM
+		(
+		SELECT D.*, ROWNUM AS RNUM
+		FROM
+		(SELECT
+		MAIL_NO,
+		MAIL_SEN,
+		MAIL_READ,
+		MAIL_DATE,
+		MAIL_CONT,
+		MAIL_TITLE,
+		MAIL_DEL,
+		MAIL_DDATE,
+		MAIL_TRASH,
+		MAIL_REC,
+		REC_DEL,
+		REC_CMAIL,
+		SEN_NM,
+		SEN_CMAIL,
+		EMP_IMG
+		FROM (
+		SELECT
+		A.MAIL_NO,
+		A.MAIL_SEN,
+		A.MAIL_READ,
+		TO_CHAR(A.MAIL_DATE,
+		'YYYY-MM-DD HH24:MI:SS') AS "MAIL_DATE",
+		A.MAIL_CONT,
+		A.MAIL_TITLE,
+		A.MAIL_DEL,
+		A.MAIL_DDATE,
+		A.MAIL_TRASH,
+		B.MAIL_REC,
+		B.REC_DEL,
+		B.EMP_CMAIL
+		AS "REC_CMAIL",
+		C.EMP_NM AS "SEN_NM",
+		C.EMP_CMAIL AS "SEN_CMAIL",
+		C.EMP_IMG
+		FROM
+		MAIL A
+		INNER JOIN (
+		SELECT
+		MAIL_NO,
+		MAIL_REC,
+		EMP_NM,
+		EMP_CMAIL,
+		REC_DEL,
+		EMP_IMG
+		FROM
+		MAIL_IN
+		LEFT OUTER JOIN
+		EMP ON EMP_CD =
+		MAIL_REC
+		) B ON A.MAIL_NO = B.MAIL_NO
+		LEFT OUTER JOIN
+		EMP C ON A.MAIL_SEN
+		= C.EMP_CD
+		WHERE
+		B.MAIL_REC = #{empCd}
+		AND A.MAIL_DEL = 'N'
+		ORDER BY
+		MAIL_DATE DESC
+		))D
+		<include refid="searchFrag" />
+		)E
+       <![CDATA[
+		WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+		]]>
+	</select>
+
+
+
+
+	<!-- 보낸메일 -->
+	<select id="selectSMailList"
+		parameterType="kr.or.ddit.paging.vo.PaginationInfo"
+		resultType="kr.or.ddit.mail.vo.MailVO">
+		SELECT E.*
+		FROM
+		(
+		SELECT D.*, ROWNUM AS RNUM
+		FROM
+		(
+		SELECT
+		A.MAIL_NO,
+		A.MAIL_SEN,
+		A.MAIL_READ,
+		TO_CHAR(A.MAIL_DATE, 'YYYY-MM-DD HH24:MI:SS')
+		"MAIL_DATE",
+		A.MAIL_CONT,
+		A.MAIL_TITLE,
+		A.MAIL_DEL,
+		A.MAIL_DDATE,
+		A.MAIL_TRASH,
+		B.MAIL_REC,
+		B.REC_DEL,
+		B.EMP_CMAIL "REC_CMAIL",
+		B.EMP_NM
+		"REC_NM",
+		C.EMP_NM "SEN_NM",
+		C.EMP_CMAIL "SEN_CMAIL",
+		C.EMP_IMG
+		FROM
+		MAIL A
+		INNER JOIN (
+		SELECT
+		MAIL_NO,
+		MAIL_REC,
+		EMP_NM,
+		EMP_CMAIL,
+		REC_DEL,
+		EMP_IMG
+		FROM
+		MAIL_IN
+		LEFT OUTER JOIN
+		EMP ON EMP_CD = MAIL_REC
+		) B ON A.MAIL_NO =
+		B.MAIL_NO
+		LEFT OUTER JOIN
+		EMP C ON B.MAIL_REC = C.EMP_CD
+		WHERE
+		A.MAIL_SEN=#{empCd}
+		AND B.REC_DEL = 'N'
+		ORDER BY
+		MAIL_DATE DESC
+		)D
+		<include refid="searchFrag" />
+		)E
+	       <![CDATA[
+			WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+			]]>
+
+
+	</select>
+
+	<!-- 안읽은 메일 -->
+	<select id="selectUMailList" parameterType="String"
+		resultType="kr.or.ddit.mail.vo.MailVO">
+
+		SELECT E.*
+		FROM
+		(
+		SELECT D.*, ROWNUM AS RNUM
+		FROM
+		(SELECT
+		MAIL_NO,
+		MAIL_SEN,
+		MAIL_READ,
+		MAIL_DATE,
+		MAIL_CONT,
+		MAIL_TITLE,
+		MAIL_DEL,
+		MAIL_DDATE,
+		MAIL_TRASH,
+		MAIL_REC,
+		REC_DEL,
+		REC_CMAIL,
+		SEN_NM,
+		SEN_CMAIL,
+		EMP_IMG
+		FROM (
+		SELECT
+		A.MAIL_NO,
+		A.MAIL_SEN,
+		A.MAIL_READ,
+		TO_CHAR(A.MAIL_DATE,
+		'YYYY-MM-DD HH24:MI:SS') AS "MAIL_DATE",
+		A.MAIL_CONT,
+		A.MAIL_TITLE,
+		A.MAIL_DEL,
+		A.MAIL_DDATE,
+		A.MAIL_TRASH,
+		B.MAIL_REC,
+		B.REC_DEL,
+		B.EMP_CMAIL
+		AS "REC_CMAIL",
+		C.EMP_NM AS "SEN_NM",
+		C.EMP_CMAIL AS "SEN_CMAIL",
+		C.EMP_IMG
+		FROM
+		MAIL A
+		INNER JOIN (
+		SELECT
+		MAIL_NO,
+		MAIL_REC,
+		EMP_NM,
+		EMP_CMAIL,
+		REC_DEL,
+		EMP_IMG
+		FROM
+		MAIL_IN
+		LEFT OUTER JOIN
+		EMP ON EMP_CD =
+		MAIL_REC
+		) B ON A.MAIL_NO = B.MAIL_NO
+		LEFT OUTER JOIN
+		EMP C ON A.MAIL_SEN
+		= C.EMP_CD
+		WHERE
+		B.MAIL_REC = #{empCd}
+		AND A.MAIL_DEL = 'N'
+		AND
+		A.MAIL_READ='N'
+		ORDER BY
+		MAIL_DATE DESC
+		))D
+		<include refid="searchFrag" />
+		)E
+       <![CDATA[
+		WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+		]]>
+	</select>
+
+
+	<!-- 상세메일 -->
+	<resultMap type="mailVO" id="mailMap" autoMapping="true">
+		<id property="mailNo" column="AMAIL_NO" />
+		<collection property="attatchList" ofType="AttatchVO"
+			autoMapping="true" />
+	</resultMap>
+	<select id="selectMail" parameterType="int" resultMap="mailMap">
+		SELECT
+		A.MAIL_NO AMAIL_NO,
+		A.MAIL_SEN,
+		A.MAIL_READ,
+		TO_CHAR(A.MAIL_DATE,
+		'YYYY-MM-DD HH24:MI:SS') "MAIL_DATE",
+		A.MAIL_CONT,
+		A.MAIL_TITLE,
+		A.MAIL_DEL,
+		A.MAIL_DDATE,
+		A.MAIL_TRASH,
+		B.MAIL_REC,
+		B.EMP_CMAIL
+		"REC_CMAIL",
+		B.EMP_NM "REC_NM",
+		C.EMP_NM "SEN_NM",
+		C.EMP_CMAIL
+		"SEN_CMAIL",
+		C.EMP_IMG,
+		D.MAIL_ATCH_NO,
+		D.MAIL_ORG_NM,
+		D.MAIL_SV_NM,
+		D.MAIL_PATH,
+		D.MAIL_ATCH_SIZE,
+		D.MAIL_NO,
+		D.MAIL_ATCH_FANCYSIZE
+		FROM
+		MAIL A
+		LEFT OUTER JOIN MAIL_ATCH D ON (A.MAIL_NO=D.MAIL_NO)
+		INNER JOIN (SELECT
+		MAIL_NO, MAIL_REC, EMP_NM, EMP_CMAIL
+		FROM MAIL_IN
+		LEFT OUTER JOIN EMP ON
+		EMP_CD=MAIL_REC) B
+		ON A.MAIL_NO=B.MAIL_NO
+		LEFT OUTER JOIN EMP C ON
+		A.MAIL_SEN=C.EMP_CD
+		WHERE A.MAIL_NO =
+		#{mailNo,jdbcType=NUMERIC}
+	</select>
+
+	<update id="readYN" parameterType="kr.or.ddit.mail.vo.MailVO">
+		UPDATE (SELECT A.MAIL_NO,
+		B.MAIL_REC, A.MAIL_READ
+		FROM MAIL A
+		INNER JOIN MAIL_IN B ON
+		A.MAIL_NO=B.MAIL_NO)
+		SET MAIL_READ = 'Y'
+		WHERE MAIL_NO = #{mailNo} AND
+		MAIL_REC = #{empCd}
+	</update>
+
+	<insert id="insertMail"
+		parameterType="kr.or.ddit.mail.vo.MailVO">
+		<selectKey resultType="int" order="BEFORE"
+			keyProperty="mailNo">
+			SELECT NVL(MAX(MAIL_NO),0)+1 FROM MAIL
+		</selectKey>
+		INSERT ALL
+		INTO MAIL (
+		MAIL_NO,
+		MAIL_READ,
+		MAIL_DATE,
+		MAIL_CONT,
+		MAIL_TITLE,
+		MAIL_DEL,
+		MAIL_TRASH,
+		MAIL_SEN
+		) VALUES (
+		#{mailNo,jdbcType=VARCHAR},
+		'N',
+		SYSDATE,
+		#{mailCont},
+		#{mailTitle,jdbcType=VARCHAR},
+		'N',
+		'N',
+		#{mailSen,jdbcType=VARCHAR}
+		)
+		INTO MAIL_IN (
+		MAIL_NO,
+		MAIL_REC,
+		REC_DEL,
+		REC_TRASH
+		) VALUES (
+		#{mailNo},
+		#{mailRec,jdbcType=VARCHAR},
+		'N',
+		'N'
+		)
+		SELECT * FROM DUAL
+	</insert>
+
+	<select id="mailAddr" parameterType="int">
+		SELECT
+		A.EMP_CD,
+		EMP_NM,
+		EMP_CMAIL,
+		FN_GET_DEPT_NO_NM(B.DEPT_NO) AS DEPT_NM,
+		B.DEPT_NO
+		FROM
+		EMP A
+		INNER JOIN HR_INFO B ON A.EMP_CD = B.EMP_CD
+		WHERE B.DEPT_NO=#{deptNo}
+	</select>
+
+
+
+	<!-- 받은메일 삭제 -->
+	<update id="updateInbox" parameterType="int">
+		UPDATE MAIL
+		SET
+		MAIL_DEL =
+		'Y'
+		WHERE
+		MAIL_NO = #{mailNo}
+	</update>
+
+	<!-- 보낸메일 삭제 -->
+	<update id="updateSentMail">
+		UPDATE MAIL_IN
+		SET
+		REC_DEL = 'Y'
+		WHERE
+		MAIL_NO =
+		#{mailNo}
+
+	</update>
+
+	<!-- 안읽은 메일 삭제 -->
+	<update id="updateUnreadMail">
+		UPDATE MAIL
+		SET
+		MAIL_DEL = 'Y'
+		WHERE
+		MAIL_NO = #{mailNo}
+
+	</update>
+
+</mapper>

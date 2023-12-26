@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.schedule.dao.ScheduleDao">
+	
+
+	<!-- 전체 일정 조회 -->
+	<select id="listAll" parameterType="String" resultType="kr.or.ddit.schedule.vo.ScheduleVO">
+		SELECT
+			A.SCHD_NO
+			, A.EMP_CD
+			, A.SCHD_TITLE
+			, A.SCHD_CONT
+			, A.SCHD_RDATE
+			, A.SCHD_SDATE
+			, A.SCHD_EDATE
+			, A.SCHD_YN
+			, A.DEL_YN
+			, A.DEL_DT
+			, C.DEPT_NO
+		FROM
+			SCHD A
+		INNER JOIN HR_INFO C ON C.EMP_CD = A.EMP_CD
+		WHERE A.SCHD_YN = #{schdYn}
+	</select>
+
+	<!-- 일정 등록 -->
+	<insert id="registSchd" parameterType="kr.or.ddit.schedule.vo.ScheduleVO">
+		<selectKey order="BEFORE" keyProperty="schdNo" resultType="String">
+			SELECT SEQ_SCHD.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO SCHD(
+			 SCHD_NO
+			, EMP_CD
+			, SCHD_TITLE
+			, SCHD_CONT
+			, SCHD_SDATE
+			, SCHD_EDATE
+			, SCHD_YN
+		)
+		VALUES(
+			#{schdNo}
+			, #{empCd}
+			, #{schdTitle}
+			, #{schdCont}
+			, to_date(#{schdSdate},'yyyy-MM-dd HH24:MI')
+			, to_date(#{schdEdate},'yyyy-MM-dd HH24:MI')
+			, #{schdYn}
+		   )
+	</insert>
+
+	<!-- 드래그앤드롭방식으로 일정 수정 -->
+	<update id="dragDropUpdate" parameterType="kr.or.ddit.schedule.vo.ScheduleVO">
+		UPDATE
+			SCHD
+		SET
+			 SCHD_RDATE = SYSDATE
+			, SCHD_SDATE = to_date(#{schdSdate},'yyyy-MM-dd HH24:MI')
+			, SCHD_EDATE = to_date(#{schdEdate},'yyyy-MM-dd HH24:MI')
+		WHERE
+			SCHD_NO = #{schdNo}
+	</update>
+
+
+	<!-- 일정 삭제 -->
+	<delete id="deleteSchd" parameterType="String">
+		DELETE FROM SCHD
+		WHERE
+		    SCHD_NO = #{schdNo}
+	</delete>
+
+
+	
+</mapper>

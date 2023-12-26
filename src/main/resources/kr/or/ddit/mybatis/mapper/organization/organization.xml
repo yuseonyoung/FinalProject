@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.organization.dao.OrganizationDao">
+	  <select id="list" resultType="kr.or.ddit.organization.vo.OrganizationVO">
+			SELECT 
+				A.EMP_CD 
+			    , A.EMP_NM
+			    , A.EMP_TEL_NO
+			    , A.EMP_MAIL
+			    , A.EMP_CMAIL
+			    , A.EMP_IMG
+			    , B.DEPT_NO
+                , FN_GET_DEPT_NO_NM(B.DEPT_NO) AS DEPT_NM
+                , B.HR_GRADE
+			    , FN_GET_COMM_CD_NM(B.HR_GRADE) AS HR_GRADE_NM
+			FROM EMP A
+			INNER JOIN HR_INFO B
+			    ON A.EMP_CD = B.EMP_CD
+			ORDER BY 
+				B.DEPT_NO, B.HR_GRADE ASC
+	  </select>
+</mapper> 
+
+
+                
+
+
+
+
+

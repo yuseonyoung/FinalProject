@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.defect.dao.DefectDAO">
+
+	<resultMap type="kr.or.ddit.defect.vo.DefectVO" id="defectMap" autoMapping="true">
+		<id property="defProcCd" column="DEF_PROC_CD"/>
+		<association property="item" autoMapping="true"/>
+		<association property="storage" autoMapping="true"/>
+	</resultMap>
+	
+	<sql id="searchFrag">
+		    <trim prefix="WHERE" prefixOverrides="AND">
+		   	 INV.DEF_PROC_DATE BETWEEN TO_CHAR(ADD_MONTHS(SYSDATE,-3),'YYYY-MM-DD') AND TO_CHAR(SYSDATE,'YYYY-MM-DD')
+		        <choose>
+				    <when test="detailCondition.searchType != null and @org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.searchType)">
+				        <if test="detailCondition.searchType == 'wareNm'">
+				            AND  W.WARE_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				        </if>
+				        <if test="detailCondition.searchType == 'itemNm'">
+				            AND ITEM.ITEM_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				        </if>
+				        <if test="detailCondition.searchType == 'defNm'">
+				            AND  COMM_CD_NM '%' || #{detailCondition.searchWord} || '%'
+				        </if>
+				    </when>
+				    <otherwise>
+				    		AND
+				        	W.WARE_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				        	OR
+				        	ITEM.ITEM_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				        	OR
+				        	COMM_CD_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				    </otherwise>
+				</choose>
+		 </trim>
+	</sql>
+	
+	
+	<select id="selectTotalRecord" resultType="int" parameterType="kr.or.ddit.paging.vo.PaginationInfo">
+		SELECT COUNT(*)
+		FROM
+			INV_DEF_PROC INV
+		JOIN
+			WARE W ON INV.WARE_CD = W.WARE_CD
+		JOIN
+			ITEM ON INV.ITEM_CD = ITEM.ITEM_CD
+		JOIN
+			COMM_CD ON INV.DEF_CD = COMM_CD.COMM_CD
+		<include refid="searchFrag" />
+	</select>
+	
+	<select id="selectDefectList" parameterType="kr.or.ddit.paging.vo.PaginationInfo" resultMap="defectMap">
+			WITH DEFECTLIST AS(
+				SELECT ROWNUM RNUM, A.*
+				FROM(
+					SELECT
+						INV.DEF_PROC_CD,
+						INV.DEF_CD,
+						INV.ITEM_CD,
+						INV.DEF_QTY,
+						INV.DEF_PROC,
+						INV.DEF_PROC_DATE,
+						INV.WARE_CD,
+						INV.EMP_CD,
+						NVL(INV.DEF_NOTE,' ') as DEF_NOTE,
+						W.WARE_NM,
+						ITEM.ITEM_NM,
+						COMM_CD.COMM_CD_NM as DEF_NM,
+						INV.SEC_CD
+					FROM
+						INV_DEF_PROC INV
+					JOIN
+						WARE W ON INV.WARE_CD = W.WARE_CD
+					JOIN
+						ITEM ON INV.ITEM_CD = ITEM.ITEM_CD
+					JOIN
+		                COMM_CD ON INV.DEF_CD = COMM_CD.COMM_CD
+		            <include refid="searchFrag" />
+					ORDER BY INV.DEF_PROC_CD DESC
+					)A
+				)
+			SELECT *
+			FROM DEFECTLIST
+			WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	<select id="selectDefect" parameterType="string" resultMap="defectMap">
+		SELECT
+				INV.DEF_PROC_CD,
+				INV.DEF_CD,
+				INV.ITEM_CD,
+				INV.DEF_QTY,
+				INV.DEF_PROC,
+				INV.DEF_PROC_DATE,
+				INV.WARE_CD,
+				INV.EMP_CD,
+				NVL(INV.DEF_NOTE,' ') as DEF_NOTE,
+				W.WARE_NM,
+				ITEM.ITEM_NM,
+				COMM_CD.COMM_CD_NM as DEF_NM,
+				EMP.EMP_NM,
+				INV.SEC_CD
+			FROM
+				INV_DEF_PROC INV
+			JOIN
+				WARE W ON INV.WARE_CD = W.WARE_CD
+			JOIN
+				ITEM ON INV.ITEM_CD = ITEM.ITEM_CD
+			JOIN
+                COMM_CD ON INV.DEF_CD = COMM_CD.COMM_CD
+            JOIN 
+                EMP ON INV.EMP_CD = EMP.EMP_CD
+			WHERE INV.DEF_PROC_CD = #{procCd}
+	</select> 
+	
+	<insert id="insertDefect" parameterType="kr.or.ddit.defect.vo.DefectVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="defProcCd">
+			SELECT 
+				#{defProcdate} 
+				|| '-' 
+				|| TO_CHAR(NVL(MAX(TO_NUMBER(SUBSTR(def_proc_cd, 12, 2))), 0) + 1, 'FM00')
+			FROM 
+				INV_DEF_PROC
+			WHERE 
+				def_proc_cd LIKE #{defProcdate}||'%'
+		</selectKey>
+		INSERT INTO INV_DEF_PROC(
+			DEF_PROC_CD
+			,DEF_CD
+			,ITEM_CD
+			,DEF_QTY
+			,DEF_PROC
+			,DEF_PROC_DATE
+			,WARE_CD
+			,EMP_CD
+			,DEF_NOTE
+			,SEC_CD
+		)VALUES(
+			#{defProcCd}
+			,#{defCd}
+			,#{itemCd}
+			,#{defQty}
+			,#{defProc}
+			,#{defProcdate}
+			,#{wareCd}
+			,#{empCd}
+			,#{defNote}
+			,#{secCd}
+		)
+		
+	</insert>
+	
+	<update id="updateDefect" parameterType="kr.or.ddit.defect.vo.DefectVO">
+	
+		UPDATE  
+			INV_DEF_PROC 
+		SET 
+	        DEF_CD = #{defCd}
+	       , ITEM_CD = #{itemCd}
+	       , DEF_QTY= #{defQty}
+	       , DEF_PROC= #{defProc}
+	       , DEF_PROC_DATE= #{defProcdate}
+	       , WARE_CD= #{wareCd}
+	       , DEF_NOTE= #{defNote}
+	       , EMP_CD= #{empCd}
+	       , SEC_CD= #{secCd}
+        WHERE 
+        	DEF_PROC_CD=#{defProcCd}
+	</update>
+
+</mapper>

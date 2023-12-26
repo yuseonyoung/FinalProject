@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.rels.dao.RelsDAO">
+	
+	<resultMap type="kr.or.ddit.rels.vo.RelsVO" id="relsMap" autoMapping="true">
+		<id property="rdrecCd" column="RDREC_CD"/>
+		<association property="employee" autoMapping="true"/>
+	    <association property="company" autoMapping="true"/>
+		<collection property="relsItem" ofType="kr.or.ddit.rels.vo.RelsItemVO" autoMapping="true">
+	        <association property="item" autoMapping="true"/>
+	    </collection>
+		
+	</resultMap>
+	
+	<select id="selectRelsList" resultMap="relsMap">
+			SELECT
+				A.RDREC_CD,
+				A.RDREC_DATE,
+				A.RDREC_OUTDATE,
+				A.EMP_CD,
+				A.COM_CD,
+				B.RDREC_UPRC,
+				B.RDREC_QTY,
+				B.ITEM_CD,
+				C.ITEM_NM,
+				D.EMP_NM,
+				E.COM_NM,
+				FN_GET_COMM_CD_NM(A.RDREC_STAT) "RDREC_STAT"
+			FROM
+				RELS_DIREC A
+			JOIN
+				ITEM_RELS_DIREC B ON A.RDREC_CD = B.RDREC_CD
+			JOIN
+				ITEM C ON C.ITEM_CD = B.ITEM_CD
+			JOIN
+				EMP D ON A.EMP_CD = D.EMP_CD
+			JOIN
+				COM E ON A.COM_CD = E.COM_CD
+			ORDER BY
+        		A.RDREC_CD DESC
+	</select>
+
+	<select id="selectRels" parameterType="string" resultMap="relsMap">
+			SELECT
+				A.RDREC_CD,
+				A.RDREC_DATE,
+				A.RDREC_OUTDATE,
+				A.EMP_CD,
+				A.COM_CD,
+				B.RDREC_UPRC,
+				B.RDREC_QTY,
+				B.ITEM_CD,
+				C.ITEM_NM,
+				D.EMP_NM,
+				E.COM_NM
+			FROM
+				RELS_DIREC A
+			JOIN
+				ITEM_RELS_DIREC B ON A.RDREC_CD = B.RDREC_CD
+			JOIN
+                ITEM C ON C.ITEM_CD = B.ITEM_CD
+            JOIN
+				EMP D ON A.EMP_CD = D.EMP_CD
+			JOIN
+				COM E ON A.COM_CD = E.COM_CD
+			WHERE A.RDREC_CD = #{rdrecCd}
+	</select>
+	
+	<!-- 
+	판매코드를 조건으로 품목아이템 목록을 가져오자
+	 -->
+	<select id="getSaleItemList" parameterType="String" resultType="SaleItemVO">
+		SELECT A.SALE_CD, A.ITEM_CD
+		     , (SELECT B.ITEM_NM FROM ITEM B WHERE B.ITEM_CD = A.ITEM_CD) ITEM_NM
+		     , A.SALE_UPRC, A.SALE_QTY
+		FROM   SALE_ITEM A
+		WHERE  A.SALE_CD = #{saleCd}
+	</select>
+	
+	<insert id="insertRels" parameterType="RelsVO">
+		<selectKey order="BEFORE" resultType="string"  keyProperty="rdrecCd">
+			select 'RD'||LPAD(NVL(MAX(TO_NUMBER(SUBSTR(rdrec_cd, 3, 5))),0)+1,3,0)
+	        from rels_direc
+		</selectKey>  
+		INSERT INTO RELS_DIREC(
+			RDREC_CD
+			,RDREC_DATE
+			,RDREC_OUTDATE
+			,RDREC_STAT
+			,EMP_CD
+			,COM_CD
+		)VALUES(
+			#{rdrecCd,jdbcType=VARCHAR}
+			,#{rdrecDate,jdbcType=VARCHAR}
+			,#{rdrecOutDate,jdbcType=VARCHAR}
+			,#{rdrecStat,jdbcType=VARCHAR}
+			,#{empCd,jdbcType=VARCHAR}
+			,#{comCd,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<insert id="insertRelsItem" parameterType="RelsItemVO">
+
+		INSERT INTO ITEM_RELS_DIREC(
+			RDREC_CD
+			,ITEM_CD
+			,RDREC_UPRC
+			,RDREC_QTY
+		)VALUES(
+			#{rdrecCd,jdbcType=VARCHAR}
+			,#{itemCd,jdbcType=VARCHAR}
+			,#{rdrecUprc,jdbcType=VARCHAR}
+			,#{rdrecQty,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<update id="updateRels" parameterType="RelsVO">
+		UPDATE
+			RELS_DIREC
+		SET
+			
+			RDREC_DATE = #{rdrecDate}
+			,RDREC_OUTDATE = #{rdrecOutDate}
+			,EMP_CD = #{empCd}
+			,COM_CD = #{comCd}
+		WHERE
+			RDREC_CD = #{rdrecCd}
+	</update>
+	
+	<update id="updateRelsItem" parameterType="RelsItemVO">
+		UPDATE
+			ITEM_RELS_DIREC
+		SET
+			ITEM_CD = #{itemCd}
+			,RDREC_UPRC = #{rdrecUprc}
+			,RDREC_QTY = #{rdrecQty}
+		WHERE
+			RDREC_CD = #{rdrecCd}
+	</update>
+	
+	<delete id="deleteRelsItem" parameterType="RelsItemVO">
+		DELETE FROM
+			ITEM_RELS_DIREC
+		WHERE
+			RDREC_CD = #{rdrecCd}
+	</delete>
+	
+	<!-- 출고예정 조회 -->
+	<select id="selectScheduledStock" resultType="java.util.Map">
+		select 
+			a.rdrec_cd "rdrecCd",
+			b.com_nm "comNm",
+			d.emp_nm "empNm",
+			a.rdrec_outdate "rdrecOutdate",
+			FN_GET_COMM_CD_NM(a.rdrec_stat) "rdrecStat",
+			c.item_cd "itemCd",
+			e.item_nm "itemNm",
+			c.rdrec_qty "rdrecQty"
+			
+		from rels_direc a
+			inner join com b on(a.com_cd = b.com_cd)
+			left outer join item_Rels_direc c on(a.rdrec_cd = c.rdrec_cd)
+			inner join emp d on(a.emp_cd = d.emp_cd)
+			inner join item e on(c.item_cd = e.item_cd)
+		where a.rdrec_stat = 'T001'	
+		order by a.rdrec_stat,a.rdrec_cd desc   
+	</select>
+	
+	<!-- 출고예정 상세조회 -->
+	<select id="selectScheduledStockDetail" parameterType="string" resultType="java.util.Map">
+		select 
+			 a.rdrec_cd "rdrecCd"
+			,a.rdrec_date "rdrecDate"
+			,e.com_nm "comNm"
+			,d.emp_nm "empNm"
+			,b.item_cd "itemCd"
+			,c.item_nm "itemNm"
+			,b.rdrec_qty "rdrecQty"
+			,a.rdrec_outdate "rdrecOutdate"
+			,c.item_unit "itemUnit"
+		from 
+			rels_direc a 
+			left outer join item_rels_direc b on (a.rdrec_cd = b.rdrec_cd)
+			inner join item c on(b.item_cd = c.item_cd)
+			inner join emp d on (d.emp_cd = a.emp_cd)
+			inner join com e on (a.com_cd = e.com_cd)
+		where a.rdrec_cd = #{rdrecCd}
+		order by a.rdrec_cd desc   
+	</select>
+	
+	
+	<!-- 출고처리 등록폼 조회 -->
+	<select id="shippingProcessForm" resultType="java.util.Map">
+		select 
+		     a.rdrec_cd "rdrecCd"
+		    ,a.rdrec_date "rdrecDate"
+		    ,e.com_nm "comNm"
+		    ,e.com_cd "comCd"
+		    ,d.emp_nm "empNm"
+		    ,d.emp_cd "empCd"
+		    ,b.item_cd "itemCd"
+		    ,f.item_nm "itemNm"
+		    ,b.rdrec_qty "rdrecQty"
+		    ,a.rdrec_outdate "rdrecOutdate"
+		    ,f.item_unit "itemUnit"       
+		    ,FN_GET_COMM_CD_NM(a.rdrec_stat) "rdrecStat" 
+		    ,f.item_note "itemNote"
+		    ,c.sec_cd2 "secCd"
+    		,c.ware_cd "wareCd"
+    		,g.ware_nm "wareNm"
+		from 
+		    rels_direc a 
+		    left outer join item_rels_direc b on (a.rdrec_cd = b.rdrec_cd)
+		    inner join item_ware c on(b.item_cd = c.item_cd)			 
+		    inner join emp d on (d.emp_cd = a.emp_cd)
+		    inner join com e on (a.com_cd = e.com_cd)
+		    inner join item f on (f.item_cd = c.item_cd)
+		    inner join ware g on (g.ware_cd = c.ware_cd)
+		where a.rdrec_stat = 'T001'   
+		order by b.rdrec_cd desc    
+	</select>
+	
+	<update id="updateRelsStat" parameterType="string">	  
+        	UPDATE rels_direc
+	        SET
+	            rdrec_stat = 'T002'
+	        WHERE
+	            rdrec_cd = #{rdrecCd}
+	</update>
+	
+	
+</mapper>

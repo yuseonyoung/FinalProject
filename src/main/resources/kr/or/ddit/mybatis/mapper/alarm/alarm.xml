@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- [[개정이력(Modification Information)]] -->
+<!-- 수정일 수정자 수정내용 -->
+<!-- ========== ====== ============== -->
+<!-- 2023. 12. 03.} 이수정 최초작성 -->
+<!-- Copyright (c) 2023 by DDIT All right reserved -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.alarm.dao.AlarmDAO">
+
+	<insert id="insertMailAlarm"
+		parameterType="kr.or.ddit.alarm.vo.AlarmVO">
+		<selectKey resultType="int" order="BEFORE"
+			keyProperty="alarmNo">
+			SELECT NVL(MAX(ALARM_NO),0)+1 FROM ALARM
+		</selectKey>
+		INSERT INTO ALARM (
+		ALARM_NO,
+		ALARM_CONT,
+		ALARM_CDATE,
+		ALARM_TYPE,
+		ALARM_URL,
+		ALARM_CHK,
+		ALARM_SENDER,
+		ALARM_RECEIVER
+		) VALUES (
+		#{alarmNo,jdbcType=NUMERIC}
+		, #{alarmCont,jdbcType=VARCHAR}
+		, sysdate
+		, 'mail'
+		, #{alarmUrl,jdbcType=VARCHAR}
+		, 'N'
+		, #{alarmSender,jdbcType=VARCHAR}
+		, #{alarmReceiver,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+
+
+	<select id="selectMailAlarmList" parameterType="String"
+		resultType="kr.or.ddit.alarm.vo.AlarmVO">
+		SELECT
+		ALARM_NO,
+		ALARM_CONT,
+		ALARM_CDATE,
+		ALARM_RDATE,
+		B.EMP_NM AS SEN_NM,
+		C.EMP_NM AS REC_NM,
+		ALARM_TYPE,
+		ALARM_URL,
+		ALARM_CHK,
+		ALARM_SENDER,
+		ALARM_RECEIVER
+		FROM ALARM
+		LEFT OUTER JOIN EMP B ON (B.EMP_CD=ALARM.ALARM_SENDER)
+		LEFT OUTER JOIN EMP C ON (C.EMP_CD=ALARM.ALARM_RECEIVER)
+		WHERE ALARM_RECEIVER = #{alarmReceiver,jdbcType=VARCHAR}
+		ORDER BY ALARM_NO DESC
+	</select>
+
+	<update id="updateAlarmChk">
+		UPDATE alarm
+		SET ALARM_CHK = 'Y'
+	</update>
+
+</mapper>

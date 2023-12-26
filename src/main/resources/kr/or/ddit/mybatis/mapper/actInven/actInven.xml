@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.actInven.dao.ActInvenDAO">
+	
+	<resultMap type="kr.or.ddit.actInven.vo.ActInvenVO" id="actInvenMap" autoMapping="true">
+		<id property="realCd" column="REAL_CD"/>
+		<association property="storage" autoMapping="true"/>
+		<association property="item" autoMapping="true"/>
+		<association property="emp" autoMapping="true"/>
+		<collection property="actIvenItem" ofType="kr.or.ddit.actInven.vo.ActInvenItemVO" autoMapping="true">
+			<association property="item" autoMapping="true"/>
+			<association property="itemWare" autoMapping="true"/>
+		</collection>
+	</resultMap>
+	
+	<sql id="searchFrag">
+		    <trim prefix="WHERE" prefixOverrides="AND">
+		   	 RI.RINV_DATE BETWEEN TO_CHAR(ADD_MONTHS(SYSDATE,-3),'YYYY-MM-DD') AND TO_CHAR(SYSDATE,'YYYY-MM-DD')
+		        <choose>
+				    <when test="detailCondition.searchType != null and @org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.searchType)">
+				        <if test="detailCondition.searchType == 'wareNm'">
+				            AND  W.WARE_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				        </if>
+				        <if test="detailCondition.searchType == 'itemNm'">
+				            AND I.ITEM_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				        </if>
+				        <if test="detailCondition.searchType == 'empNm'">
+				            AND  E.EMP_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				        </if>
+				    </when>
+				    <otherwise>
+				    		AND
+				        	W.WARE_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				        	OR
+				        	I.ITEM_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				        	OR
+				        	E.EMP_NM LIKE '%' || #{detailCondition.searchWord} || '%'
+				    </otherwise>
+				</choose>
+		 </trim>
+	</sql>
+	<select id="selectTotalRecord" resultType="int" parameterType="kr.or.ddit.paging.vo.PaginationInfo">
+		SELECT COUNT(*)
+		FROM(
+			SELECT ITEMGROUP
+			FROM(
+				SELECT RI.REAL_CD AS ITEMGROUP
+				FROM
+					REAL_INV RI
+				JOIN
+					REAL_INV_ITEM RII ON(RI.REAL_CD = RII.REAL_CD)
+				JOIN
+					WARE W ON(RI.WARE_CD = W.WARE_CD)
+				JOIN
+					ITEM I ON(RII.ITEM_CD = I.ITEM_CD)
+				JOIN
+					EMP E ON(E.EMP_CD = RI.EMP_CD)
+				JOIN
+					ITEM_WARE IW ON(RII.ITEM_CD = IW.ITEM_CD AND RI.SEC_CD = IW.SEC_CD2)
+				<include refid="searchFrag" />
+			)
+			GROUP BY ITEMGROUP
+		)
+	
+	</select>
+	
+	
+	<select id="selecetActInvenList" resultMap="actInvenMap">
+		WITH ACTiNVENlIST AS(
+		    SELECT A.*, ROWNUM RNUM
+		    FROM (
+		        SELECT *
+		        FROM REAL_INV
+		        ORDER BY REAL_CD DESC
+		    )A
+		),RI AS(
+		    SELECT *
+		    FROM ACTINVENLIST
+		    WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+		)
+		SELECT 
+		    RI.REAL_CD
+		        , RI.RINV_DATE
+		        , W.WARE_NM
+		        , I.ITEM_CD
+		        , I.ITEM_NM
+		        , I.ITEM_UNIT
+		        , E.EMP_NM
+		        , IW.WARE_QTY
+		        , RII.RINV_QTY
+		        , RI.SEC_CD
+		        , COUNT(*) OVER (PARTITION BY RI.REAL_CD) AS REAL_CD_COUNT
+		        , SUM(IW.WARE_QTY) OVER (PARTITION BY RI.REAL_CD) AS TOTAL_WARE_QTY
+		FROM RI
+		    JOIN 
+		        REAL_INV_ITEM RII ON(RI.REAL_CD = RII.REAL_CD)
+		        JOIN 
+		        WARE W ON(RI.WARE_CD = W.WARE_CD)
+		        JOIN 
+		        ITEM I ON(RII.ITEM_CD = I.ITEM_CD)
+		        JOIN 
+		        EMP E ON(E.EMP_CD = RI.EMP_CD)
+		        JOIN 
+		        ITEM_WARE IW ON(RII.ITEM_CD = IW.ITEM_CD AND RI.SEC_CD = IW.SEC_CD2)
+		        <include refid="searchFrag" />
+		        ORDER BY 
+		        RI.REAL_CD DESC, RII.ITEM_NUM ASC
+	</select>
+	
+	<select id="selectActInvenView" parameterType="string" resultMap="actInvenMap">
+		SELECT
+			RI.REAL_CD
+			, RI.RINV_DATE
+			, W.WARE_NM
+			, W.WARE_CD
+			, I.ITEM_CD
+			, I.ITEM_NM
+			, I.ITEM_UNIT
+			, E.EMP_NM
+			, E.EMP_CD
+			, IW.WARE_QTY
+			, RII.RINV_QTY
+			, RI.SEC_CD
+			, RII.ITEM_NUM
+		FROM
+			REAL_INV RI
+		JOIN REAL_INV_ITEM RII ON(RI.REAL_CD = RII.REAL_CD)
+		JOIN WARE W ON(RI.WARE_CD = W.WARE_CD)
+		JOIN ITEM I ON(RII.ITEM_CD = I.ITEM_CD)
+		JOIN EMP E ON(E.EMP_CD = RI.EMP_CD)
+		JOIN ITEM_WARE IW ON(RII.ITEM_CD = IW.ITEM_CD AND RI.SEC_CD = IW.SEC_CD2)
+		WHERE 
+			RI.REAL_CD = #{realCd}
+		ORDER BY RII.ITEM_NUM
+	</select>
+	
+	<update id="updateActInven" parameterType="kr.or.ddit.actInven.vo.ActInvenVO">
+
+		UPDATE 
+			REAL_INV
+		SET
+			RINV_DATE = #{rinvDate}
+			, EMP_CD = #{empCd}
+			, WARE_CD = #{wareCd}
+			, SEC_CD = #{secCd}
+		WHERE
+			REAL_CD = #{realCd}
+		
+	</update>
+
+	<update id="updateActInvenItem" parameterType="kr.or.ddit.actInven.vo.ActInvenItemVO">
+	
+		UPDATE
+			REAL_INV_ITEM
+		SET
+			RINV_QTY = #{rinvQty}
+			, ITEM_CD = #{itemCd}
+		WHERE
+			REAL_CD = #{realCd}
+		AND
+			ITEM_NUM = #{itemNum}
+			
+	</update>
+	
+	<insert id="insertActInven" parameterType="kr.or.ddit.actInven.vo.ActInvenVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="realCd">
+			SELECT
+				#{rinvDate}
+				||'-'
+				|| TO_CHAR(NVL(MAX(TO_NUMBER(SUBSTR(REAL_CD,12,2))),0)+1,'FM00')
+			FROM
+				REAL_INV
+			WHERE
+				REAL_CD LIKE #{rinvDate}||'%'
+		</selectKey>
+		
+			INSERT INTO
+				REAL_INV (
+					REAL_CD,
+					RINV_DATE,
+					EMP_CD,
+					WARE_CD,
+					SEC_CD
+				)
+				VALUES (
+					#{realCd }
+					,#{rinvDate }
+					,#{empCd }
+					,#{wareCd }
+					,#{secCd }
+				)
+	</insert>
+	
+	<insert id="insertActInvenItem" parameterType="kr.or.ddit.actInven.vo.ActInvenItemVO">
+		<!-- 여러 property를 갖는 select key resultType을 map으로 설정해준다 keyProperty를 하나만 주는 이유는 여러개의 속성을 지원하지 않기 때문
+			itemNum은 map 의 키값으로 사용되기 때문에 따로 지정하지 않아도 사용 가능-->
+		<selectKey order="BEFORE" resultType="int" keyProperty="itemNum">
+			SELECT
+				NVL(MAX(ITEM_NUM),0)+1 as itemNum
+			FROM 
+				REAL_INV_ITEM
+			WHERE 
+				REAL_CD =#{realCd}
+		</selectKey>
+			
+			INSERT INTO 
+				REAL_INV_ITEM (
+				    REAL_CD,
+				    RINV_QTY,
+				    ITEM_CD,
+				    ITEM_NUM
+				) VALUES (
+					#{realCd}
+					,#{rinvQty }
+					,#{itemCd }
+					,#{itemNum }
+				)
+				
+	</insert>
+	
+
+
+
+</mapper>

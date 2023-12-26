@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.quote.dao.QuoteDAO">
+	
+	<resultMap type="kr.or.ddit.quote.vo.QuoteVO" id="quoteMap" autoMapping="true">
+	    <id property="qteCd" column="QTE_CD"/>
+	    <association property="employee" autoMapping="true"/>
+	    <association property="company" autoMapping="true"/>
+	    <collection property="quoteItem" ofType="kr.or.ddit.quote.vo.QuoteItemVO" autoMapping="true">
+	        <association property="item" autoMapping="true"/>
+	    </collection>
+	</resultMap>
+	
+	<select id="selectQuoteList" resultMap="quoteMap">
+			SELECT
+				A.QTE_CD,
+				A.QTE_DATE,
+				A.EMP_CD,
+				A.COM_CD,
+				B.QTE_UPRC,
+				B.QTE_QTY,
+				B.ITEM_CD,
+				C.ITEM_NM,
+				D.EMP_NM,
+				E.COM_NM,
+				FN_GET_COMM_CD_NM(A.QTE_STAT) "QTE_STAT"
+			FROM
+				QUOTE A
+			JOIN
+				QTE_ITEM B ON A.QTE_CD = B.QTE_CD
+			JOIN
+				ITEM C ON C.ITEM_CD = B.ITEM_CD
+			JOIN
+				EMP D ON A.EMP_CD = D.EMP_CD
+			JOIN
+				COM E ON A.COM_CD = E.COM_CD
+			ORDER BY
+        		A.QTE_CD DESC
+	</select>
+
+	<select id="selectQuote" parameterType="string" resultMap="quoteMap">
+			SELECT
+				A.QTE_CD,
+				A.QTE_DATE,
+				A.EMP_CD,
+				A.COM_CD,
+				B.QTE_UPRC,
+				B.QTE_QTY,
+				B.ITEM_CD,
+				C.ITEM_NM,
+				D.EMP_NM,
+				E.COM_NM
+			FROM
+				QUOTE A
+			JOIN
+				QTE_ITEM B ON A.QTE_CD = B.QTE_CD
+			JOIN
+                ITEM C ON C.ITEM_CD = B.ITEM_CD
+            JOIN
+				EMP D ON A.EMP_CD = D.EMP_CD
+			JOIN
+				COM E ON A.COM_CD = E.COM_CD
+			WHERE A.QTE_CD = #{qteCd}
+	</select>
+	
+	<!-- 
+	 QuoteVO(qteNum=0, qteCd=null, qteDate=2023-12-04, qteStat=T001, comCd=COM036, comNm=㈜트린프, empCd=E201001110501, empNm=조현준, btbQteCd=null,
+	 -->
+	<insert id="insertQuote" parameterType="QuoteVO">
+		<selectKey keyProperty="qteCd" resultType="string" order="BEFORE">
+			select 'Q'||LPAD(NVL(MAX(TO_NUMBER(SUBSTR(qte_cd, 2, 5))),0)+1,3,0)
+	        from quote
+		</selectKey>
+		
+		INSERT INTO QUOTE(
+			QTE_CD
+			,QTE_DATE
+			,QTE_STAT
+			,EMP_CD
+			,COM_CD
+		)VALUES(
+			#{qteCd,jdbcType=VARCHAR}
+			,#{qteDate,jdbcType=VARCHAR}
+			,#{qteStat,jdbcType=VARCHAR}
+			,#{empCd,jdbcType=VARCHAR}
+			,#{comCd,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<!-- 
+	//qteCd=Q189, itemCd=dsaf, qteUprc=2.0, qteQty=1.0, 
+	 -->
+	<insert id="insertQuoteItem" parameterType="QuoteItemVO">
+		INSERT INTO QTE_ITEM(
+			QTE_CD
+			,ITEM_CD
+			,QTE_UPRC
+			,QTE_QTY
+		)VALUES(
+			#{qteCd,jdbcType=VARCHAR}
+			,#{itemCd,jdbcType=VARCHAR}
+			,#{qteUprc,jdbcType=VARCHAR}
+			,#{qteQty,jdbcType=VARCHAR}
+		)
+	</insert>
+
+	
+	<!-- 
+	qteNum=0, qteCd=Q237, qteDate=2023-12-04, qteStat=null, comCd=COM033, comNm=기아나, empCd=E202003150101, empNm=황수빈, 
+	 -->
+	<update id="updateQuote" parameterType="QuoteVO">
+		UPDATE
+			QUOTE
+		SET
+			QTE_DATE = #{qteDate}
+			,EMP_CD = #{empCd}
+			,COM_CD = #{comCd}
+		WHERE
+			QTE_CD = #{qteCd}
+	</update>
+	
+	<update id="updateQuoteItem" parameterType="QuoteItemVO">
+		UPDATE
+			QTE_ITEM
+		SET
+			ITEM_CD = #{itemCd}
+			,QTE_UPRC = #{qteUprc}
+			,QTE_QTY = #{qteQty}
+		WHERE
+			QTE_CD = #{qteCd}
+	</update>
+	
+	<delete id="deleteQuoteItem" parameterType="QuoteItemVO">
+		DELETE FROM
+			QTE_ITEM
+		WHERE
+			QTE_CD = #{qteCd}
+	</delete>
+	
+	<update id="updateQteStat" parameterType="string">
+		UPDATE quote
+		SET
+			qte_stat = 'T002'
+		WHERE
+			qte_cd = #{qteCd}
+	</update>
+	
+</mapper>
+
+
+
