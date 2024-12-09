@@ -103,7 +103,11 @@ AIM 프로젝트는 재고관리, 창고관리, 구매 및 판매, 인사관리 
 
 - 창고구역관리
 1) 창고구역 등록
-https://github.com/user-attachments/assets/2d362156-64c2-4692-b852-fc84413af632
+
+
+https://github.com/user-attachments/assets/671bf090-4c56-4bbc-aa7c-778ec1a74759
+
+
 
 2) 창고구역 조회
 ![창고구역조회](https://github.com/user-attachments/assets/618b5ea5-0245-44ac-a61a-45615a21c5d4)
