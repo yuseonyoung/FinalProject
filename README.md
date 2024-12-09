@@ -33,7 +33,7 @@ AIM 프로젝트는 재고관리, 창고관리, 구매 및 판매, 인사관리 
 
 ## 🛠 개발 환경
 - **Backend**: Java, Spring Framework, MyBatis, TilesFramework  
-- **Server**: Apache Tomcat  
+- **WebServer**: Apache Tomcat  
 - **Database**: Oracle  
 - **Version Control**: SVN  
 - **UI/UX**: HTML5, CSS3, JavaScript, jQuery, Bootstrap  
