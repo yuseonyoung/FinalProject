@@ -87,11 +87,11 @@ AIM 프로젝트는 재고관리, 창고관리, 구매 및 판매, 인사관리 
 
 ---
 
-## 별첨. 참고자료
-** - 대시보드 및 실시간 알람
+## 별첨자료
+- 대시보드 및 실시간 알람
 ![대시보드](https://github.com/user-attachments/assets/437277da-369c-4949-96a9-42c54ff0ff62)
 
-** - 창고관리
+- 창고관리
 1) 창고조회
 ![창고조회](https://github.com/user-attachments/assets/95959cd3-cb28-4c97-a7ca-91593ad93c77)
 
@@ -101,9 +101,42 @@ AIM 프로젝트는 재고관리, 창고관리, 구매 및 판매, 인사관리 
 3) 창고 위치 조회
 ![창고지도확인](https://github.com/user-attachments/assets/11673bd9-9e8b-4fd9-961f-d297728ad737)
 
-** - 창고구역관리
-
+- 창고구역관리
+1) 창고구역 등록
 https://github.com/user-attachments/assets/2d362156-64c2-4692-b852-fc84413af632
+
+2) 창고구역 조회
+![창고구역조회](https://github.com/user-attachments/assets/618b5ea5-0245-44ac-a61a-45615a21c5d4)
+
+3) 창고품목이동 
+![창고품목이동](https://github.com/user-attachments/assets/971dd904-db6d-4315-bc65-7bc289e15f60)
+
+4) 창고품목이동 완료된 화면
+㉠ 창고의 품목이 이동된 창고
+![품목이이동된창고](https://github.com/user-attachments/assets/370b79b5-fcee-4dc4-b46c-0f12c0d3ed80)
+
+㉡ 창고의 품목이 이동되는 창고
+![품목이동되는창고](https://github.com/user-attachments/assets/ace0537f-b2b6-42b4-ae48-c20d8f4396ca)
+
+- 창고입출고관리
+1) 창고입고관리
+㉠ 입고 예정 조회
+![입고예정조회](https://github.com/user-attachments/assets/4d03cb8f-1359-4fdb-8364-50cf717f5368)
+
+㉡ 입고될 창고 구역 입력
+![창고구역입력](https://github.com/user-attachments/assets/c3e97e54-0ba0-41d3-b070-672144027d88)
+
+㉢ 품목이 입고확정된 창고
+![품목이입고확정된창고](https://github.com/user-attachments/assets/4353d049-a7d4-4039-9cb5-b75d30592f90)
+
+2) 창고출고관리
+㉠ 출하 예정 조회
+![출하예정조회](https://github.com/user-attachments/assets/cd2e44e2-326c-48da-8992-65a05f8409d2)
+
+㉡ 출하 확정 
+![출하확정](https://github.com/user-attachments/assets/a086d1dc-b67a-46a8-9008-964ba82243ab)
+
+
 
 
 
