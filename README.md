@@ -112,6 +112,7 @@ https://github.com/user-attachments/assets/2d362156-64c2-4692-b852-fc84413af632
 ![창고품목이동](https://github.com/user-attachments/assets/971dd904-db6d-4315-bc65-7bc289e15f60)
 
 4) 창고품목이동 완료된 화면
+
 ㉠ 창고의 품목이 이동된 창고
 ![품목이이동된창고](https://github.com/user-attachments/assets/370b79b5-fcee-4dc4-b46c-0f12c0d3ed80)
 
@@ -120,6 +121,7 @@ https://github.com/user-attachments/assets/2d362156-64c2-4692-b852-fc84413af632
 
 - 창고입출고관리
 1) 창고입고관리
+
 ㉠ 입고 예정 조회
 ![입고예정조회](https://github.com/user-attachments/assets/4d03cb8f-1359-4fdb-8364-50cf717f5368)
 
