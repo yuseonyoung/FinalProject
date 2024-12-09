@@ -127,7 +127,7 @@ https://github.com/user-attachments/assets/94988900-2b01-46a6-904c-c76676b9560f
 - 품목 이동 후 화면  
   - 이동된 창고  
   ![품목이이동된창고](https://github.com/user-attachments/assets/370b79b5-fcee-4dc4-b46c-0f12c0d3ed80)  
-  - 이동 중 창고  
+  - 이동한 창고  
   ![품목이동되는창고](https://github.com/user-attachments/assets/ace0537f-b2b6-42b4-ae48-c20d8f4396ca)  
 
 ### **창고입출고관리**
